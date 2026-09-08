@@ -1,0 +1,5 @@
+# denext generated build artifacts
+.denext/
+out/
+src/index.gen.css
+desktop-icon.png
