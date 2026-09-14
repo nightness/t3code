@@ -1726,8 +1726,10 @@ function PullRequestsRouteView() {
       // The bare workspace-titlebar-controls inset plus mr-px: the same
       // anchor the thread view's controls and the sidebar trigger use, so
       // every titlebar cluster in the app sits one shared inset from its
-      // edge.
-      className="absolute top-[var(--workspace-controls-top)] right-[var(--workspace-controls-right)] z-50 mr-px flex h-[var(--workspace-topbar-height)] items-center gap-1 [-webkit-app-region:no-drag]"
+      // edge. It is absolute inside the inset (already below #root's
+      // safe-area padding), so the top inset the fixed clusters carry is
+      // taken back out.
+      className="absolute top-[calc(var(--workspace-controls-top)_-_env(safe-area-inset-top,0px))] right-[var(--workspace-controls-right)] z-50 mr-px flex h-[var(--workspace-topbar-height)] items-center gap-1 [-webkit-app-region:no-drag]"
       data-workspace-titlebar-controls
     >
       {panelToggleControls}
