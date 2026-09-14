@@ -172,6 +172,7 @@ import {
 import { searchableSetting } from "./settingsSearch";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { PanelAnimationsPreview } from "./PanelAnimationsPreview";
+import { useLongPress } from "../../hooks/useLongPress";
 
 const ENVIRONMENT_IDENTIFICATION_LABELS: Record<EnvironmentIdentificationMode, string> = {
   artwork: "Artwork",
@@ -3281,6 +3282,7 @@ export function GeneralSettingsPanel() {
 
 export function ArchivedThreadsPanel() {
   const { scope } = useSettingsScope();
+  const longPress = useLongPress();
   const { unarchiveThread, confirmAndDeleteThread } = useThreadActions();
   const {
     snapshots: archivedSnapshots,
@@ -3428,6 +3430,7 @@ export function ArchivedThreadsPanel() {
             {projectThreads.map((thread) => (
               <SettingsRow
                 key={thread.id}
+                {...longPress}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   void (async () => {

@@ -1,3 +1,5 @@
+import { saveFile } from "../../lib/saveFile";
+
 /** Resolves web references without inheriting the desktop renderer's custom app scheme. */
 export function resolveProtocolRelativeMediaUrl(src: string): string {
   if (!src.startsWith("//")) return src;
@@ -27,15 +29,7 @@ async function readMediaBlob(src: string): Promise<Blob> {
 
 /** Downloads the original bytes with their original filename, without changing playback URLs. */
 export async function downloadMedia(src: string, name: string): Promise<void> {
-  const url = URL.createObjectURL(await readMediaBlob(src));
-  try {
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = name;
-    anchor.click();
-  } finally {
-    setTimeout(() => URL.revokeObjectURL(url), 30_000);
-  }
+  await saveFile(await readMediaBlob(src), name);
 }
 
 /** Converts browser-decodable images, including SVG, into the clipboard's portable PNG format. */

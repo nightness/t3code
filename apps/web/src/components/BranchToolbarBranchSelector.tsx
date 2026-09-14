@@ -75,6 +75,7 @@ import {
 import { stackedThreadToast, toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import { MiddleTruncate } from "./ui/middle-truncate";
+import { useLongPress } from "../hooks/useLongPress";
 
 export interface BranchToolbarBranchSelectorHandle {
   open: () => void;
@@ -119,6 +120,7 @@ export function BranchToolbarBranchSelector({
 }: BranchToolbarBranchSelectorProps) {
   const composerFloatingLayerProps = useComposerMenuProps();
   const startFromOriginSwitchId = useId();
+  const longPress = useLongPress();
   const stopThreadSession = useAtomCommand(threadEnvironment.stopSession, "thread session stop");
   const updateThreadMetadata = useAtomCommand(
     threadEnvironment.updateMetadata,
@@ -754,6 +756,7 @@ export function BranchToolbarBranchSelector({
         value={itemValue}
         onClick={() => selectPickerItem(itemValue)}
         onContextMenu={(event) => handleBranchContextMenu(event, itemValue)}
+        {...longPress}
       >
         <div className="flex w-full min-w-0 items-center justify-between gap-2">
           <MiddleTruncate value={itemValue} className="flex-1" />
@@ -804,6 +807,7 @@ export function BranchToolbarBranchSelector({
         <span
           className="flex min-w-0"
           onContextMenu={(event) => handleBranchContextMenu(event, resolvedActiveBranch)}
+          {...longPress}
         >
           <ComboboxTrigger
             render={<ComposerControl size="xs" />}

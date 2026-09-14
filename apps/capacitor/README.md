@@ -70,6 +70,15 @@ platforms allow cleartext and mixed content:
   `android/app/src/main/AndroidManifest.xml`, plus `android.allowMixedContent: true` in
   `capacitor.config.ts`.
 
+## Keyboard
+
+`@capacitor/keyboard` runs with `resize: "native"` (`plugins.Keyboard` in
+`capacitor.config.ts`). WKWebView ignores `interactive-widget=resizes-content`, so the
+plugin resizes the WKWebView frame itself when the keyboard shows. The layout is sized
+in viewport units (`h-svh` / `h-dvh`), so it shrinks with the frame, and the docked
+composer sits directly above the keyboard. The plugin also hides the iOS form accessory
+bar (prev/next/done) when it loads.
+
 ## Icons
 
 `assets/icon.png` is an opaque 1024×1024 square composited from the production Icon

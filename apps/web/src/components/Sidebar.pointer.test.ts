@@ -2,6 +2,7 @@ import type { SensorProps } from "@dnd-kit/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { act, createElement, StrictMode } from "react";
 import { create, type ReactTestRenderer } from "react-test-renderer";
+import { LONG_PRESS_DELAY_MS } from "../hooks/useLongPress";
 import { SidebarDragLifecycle, SidebarPointerSensor } from "./Sidebar.pointer";
 
 class TestDocument extends EventTarget {
@@ -23,7 +24,9 @@ function pointer(type: string, values: Partial<PointerEvent> = {}) {
   });
 }
 
-function gesture() {
+type SensorOptions = ConstructorParameters<typeof SidebarPointerSensor>[0]["options"];
+
+function gesture(down: Partial<PointerEvent> = {}, extraOptions: Partial<SensorOptions> = {}) {
   const callbacks = {
     onStart: vi.fn(),
     onMove: vi.fn(),
@@ -36,10 +39,10 @@ function gesture() {
   // The sensor never reads dnd-kit's layout context or active node.
   const props = {
     active: "thread",
-    event: pointer("pointerdown"),
-    options: { distance: 6, onAttach: vi.fn(), onFinish },
+    event: pointer("pointerdown", down),
+    options: { distance: 6, onAttach: vi.fn(), onFinish, ...extraOptions },
     ...callbacks,
-  } as unknown as SensorProps<ConstructorParameters<typeof SidebarPointerSensor>[0]["options"]>;
+  } as unknown as SensorProps<SensorOptions>;
   const sensor = new SidebarPointerSensor(props);
   sensors.push(sensor);
   return { sensor, onFinish, ...callbacks };
@@ -49,7 +52,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   document = new TestDocument();
-  window = Object.assign(new EventTarget(), { setTimeout });
+  window = Object.assign(new EventTarget(), { setTimeout, clearTimeout });
   vi.stubGlobal("document", document);
   vi.stubGlobal("window", window);
 });
@@ -196,5 +199,75 @@ describe("sidebar pointer lifecycle", () => {
     expect(previous.onCancel).toHaveBeenCalledOnce();
     expect(previous.onEnd).not.toHaveBeenCalled();
     expect(next.onEnd).toHaveBeenCalledOnce();
+  });
+});
+
+describe("sidebar touch drag", () => {
+  const touch = { pointerType: "touch" } as const;
+  function touchMove() {
+    const event = new Event("touchmove", { cancelable: true });
+    document.dispatchEvent(event);
+    return event;
+  }
+
+  it("gives a swipe that moves before the long-press hold back to the browser", () => {
+    const swipe = gesture(touch);
+    expect(touchMove().defaultPrevented).toBe(false);
+    document.dispatchEvent(pointer("pointermove", { clientY: 21 }));
+    expect(swipe.onStart).not.toHaveBeenCalled();
+    expect(swipe.onAbort).toHaveBeenCalledOnce();
+    expect(swipe.onCancel).toHaveBeenCalledOnce();
+    expect(swipe.onFinish).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it("stays pending through jitter past the mouse threshold before the hold", () => {
+    const hold = gesture(touch);
+    document.dispatchEvent(pointer("pointermove", { clientY: 17 }));
+    expect(hold.onStart).not.toHaveBeenCalled();
+    expect(hold.onCancel).not.toHaveBeenCalled();
+    document.dispatchEvent(pointer("pointerup", { buttons: 0 }));
+    expect(hold.onAbort).toHaveBeenCalledOnce();
+  });
+
+  it("drags after the hold once past the long-press tolerance, and holds the list still", () => {
+    const onTouchDragStart = vi.fn();
+    const drag = gesture(touch, { onTouchDragStart });
+    vi.advanceTimersByTime(LONG_PRESS_DELAY_MS);
+    expect(touchMove().defaultPrevented).toBe(true);
+    document.dispatchEvent(pointer("pointermove", { clientY: 20 }));
+    expect(drag.onStart).not.toHaveBeenCalled();
+    document.dispatchEvent(pointer("pointermove", { clientY: 21 }));
+    expect(onTouchDragStart).toHaveBeenCalledOnce();
+    expect(drag.onStart).toHaveBeenCalledExactlyOnceWith({ x: 10, y: 10 });
+    document.dispatchEvent(pointer("pointerup", { buttons: 0 }));
+    expect(drag.onEnd).toHaveBeenCalledOnce();
+    expect(touchMove().defaultPrevented).toBe(false);
+  });
+
+  it("leaves mouse drags on the distance threshold and touchmove alone", () => {
+    const onTouchDragStart = vi.fn();
+    const drag = gesture({}, { onTouchDragStart });
+    vi.advanceTimersByTime(LONG_PRESS_DELAY_MS);
+    expect(touchMove().defaultPrevented).toBe(false);
+    document.dispatchEvent(pointer("pointermove", { clientY: 17 }));
+    expect(drag.onStart).toHaveBeenCalledOnce();
+    expect(onTouchDragStart).not.toHaveBeenCalled();
+  });
+
+  it("keeps iOS touchmove cancelable only where a coarse pointer exists", () => {
+    const coarse = Object.assign(new EventTarget(), { matchMedia: () => ({ matches: true }) });
+    const add = vi.spyOn(coarse, "addEventListener");
+    const remove = vi.spyOn(coarse, "removeEventListener");
+    vi.stubGlobal("window", coarse);
+    const teardown = SidebarPointerSensor.setup();
+    expect(add).toHaveBeenCalledWith("touchmove", expect.any(Function), { passive: false });
+    teardown?.();
+    expect(remove).toHaveBeenCalledWith("touchmove", add.mock.calls[0]?.[1]);
+
+    vi.stubGlobal(
+      "window",
+      Object.assign(new EventTarget(), { matchMedia: () => ({ matches: false }) }),
+    );
+    expect(SidebarPointerSensor.setup()).toBeUndefined();
   });
 });

@@ -2,6 +2,7 @@ import { SearchIcon } from "lucide-react";
 import { PullRequestStackPopover } from "./PullRequestStackPopover";
 import { memo, type RefCallback } from "react";
 
+import { useLongPress } from "~/hooks/useLongPress";
 import { cn } from "~/lib/utils";
 import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
 
@@ -76,6 +77,35 @@ export type PullRequestRowTarget = Pick<
   "environmentId" | "projectId" | "host" | "repository" | "number"
 >;
 
+/**
+ * The number carries the link, here as much as on the detail: a right-click on it copies the
+ * pull request's own address rather than opening the editing menu. A long press stands in for
+ * that right-click where `contextmenu` never fires, which is every touch webview.
+ *
+ * Its own component because it is the row's only hook: the row itself stays a plain function of
+ * its props, so it can be called directly to inspect the tree it returns.
+ */
+function PullRequestRowNumber({ entry }: { entry: EnvironmentPullRequestEntry }) {
+  const longPress = useLongPress();
+  return (
+    <span
+      className={PULL_REQUEST_ROW_NUMBER_CLASS}
+      {...longPress}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void showPullRequestLinkContextMenu({
+          url: entry.url,
+          openLabel: openOnHostLabel(entry.provider),
+          position: { x: event.clientX, y: event.clientY },
+        });
+      }}
+    >
+      #{entry.number}
+    </span>
+  );
+}
+
 function PullRequestRowImpl({
   entry,
   selected,
@@ -132,24 +162,7 @@ function PullRequestRowImpl({
         className="mt-0.75 self-start"
       />
       <PullRequestRowLines
-        number={
-          // The number carries the link, here as much as on the detail: a right-click on it
-          // copies the pull request's own address rather than opening the editing menu.
-          <span
-            className={PULL_REQUEST_ROW_NUMBER_CLASS}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              void showPullRequestLinkContextMenu({
-                url: entry.url,
-                openLabel: openOnHostLabel(entry.provider),
-                position: { x: event.clientX, y: event.clientY },
-              });
-            }}
-          >
-            #{entry.number}
-          </span>
-        }
+        number={<PullRequestRowNumber entry={entry} />}
         title={entry.title}
         signals={
           <>
