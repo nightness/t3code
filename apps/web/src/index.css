@@ -2090,6 +2090,23 @@ code {
   }
 }
 
+/* Elements whose context menu opens on a touch long press (useLongPress).
+   Without these, iOS answers the same hold with its own link/image callout and
+   a text selection. Unlayered so it outranks select-text utilities; form fields
+   keep selection, since iOS can refuse input into an unselectable field. */
+@media (pointer: coarse) {
+  [data-long-press],
+  [data-long-press] * {
+    -webkit-touch-callout: none;
+  }
+
+  [data-long-press]:not(input, textarea),
+  [data-long-press] *:not(input, textarea, [contenteditable]:not([contenteditable="false"])) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 /* Let the sortable rows open label clearance before painting the dividers.
    This runs once per pickup; rows retain dnd-kit's normal 200ms transitions. */
 .sidebar-drag-boundary-label {

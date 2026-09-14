@@ -9,7 +9,8 @@ interface PanelTabCloseButtonProps {
   tooltip?: string;
 }
 
-/** Inside a `group/tab` row, swaps the tab identity for its close action on hover or focus. */
+/** Inside a `group/tab` row, swaps the tab identity for its close action on hover or focus.
+ * A touch screen cannot hover, so there the close action always shows. */
 export function PanelTabCloseButton({
   children,
   label,
@@ -23,10 +24,10 @@ export function PanelTabCloseButton({
       aria-label={label}
       onClick={onClick}
     >
-      <span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden">
+      <span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden pointer-coarse:hidden">
         {children}
       </span>
-      <X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block" />
+      <X className="hidden size-3 group-hover/tab:block group-focus-visible/close:block pointer-coarse:block" />
     </button>
   );
 

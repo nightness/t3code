@@ -25,7 +25,14 @@ export function RightPanelSheet(props: {
         keepMounted
         className={RIGHT_PANEL_SHEET_CLASS_NAME}
       >
-        {props.children}
+        {/* The sheet overlays the full viewport, so on an edge-to-edge phone
+            (the Capacitor iOS shell) its tab bar would sit under the status
+            bar and its content under the home indicator. Browsers and desktop
+            resolve these insets to 0. The panel background fills the inset
+            strips so they match the panel instead of the popover surface. */}
+        <div className="flex h-full min-h-0 w-full flex-col bg-background pt-safe pr-safe pb-safe">
+          {props.children}
+        </div>
       </SheetPopup>
     </Sheet>
   );

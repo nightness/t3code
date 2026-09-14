@@ -89,6 +89,7 @@ import {
   resolveTerminalFontSizePreference,
   TYPOGRAPHY_ADVANCED_STORAGE_KEY,
 } from "../appearanceFonts";
+import { useLongPress } from "../hooks/useLongPress";
 
 const MIN_DRAWER_HEIGHT = 180;
 const MAX_DRAWER_HEIGHT_RATIO = 0.75;
@@ -352,6 +353,7 @@ export function TerminalViewport({
   keybindings,
 }: TerminalViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const longPress = useLongPress();
   const terminalRef = useRef<GhosttyTerminalSurface | null>(null);
   const visibleRef = useRef(visible);
   const environmentId = threadRef.environmentId;
@@ -982,6 +984,7 @@ export function TerminalViewport({
       ref={containerRef}
       tabIndex={-1}
       className="relative h-full w-full overflow-hidden bg-[var(--terminal-background)]"
+      {...longPress}
     />
   );
 }

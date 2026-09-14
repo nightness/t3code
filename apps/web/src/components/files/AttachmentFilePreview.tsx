@@ -35,6 +35,7 @@ import {
   FileSurfaceLoading,
   FileSurfaceNotice,
 } from "./fileSurfaceChrome";
+import { saveFile } from "../../lib/saveFile";
 
 const SourcePreview = lazy(() => import("./ReadOnlySourcePreview"));
 
@@ -207,15 +208,7 @@ export function AttachmentFilePreview(props: {
         }
         // A Blob keeps cross-origin downloads inside the desktop client instead of
         // navigating its custom app scheme to an external browser.
-        const downloadUrl = URL.createObjectURL(file);
-        try {
-          const anchor = document.createElement("a");
-          anchor.href = downloadUrl;
-          anchor.download = props.name;
-          anchor.click();
-        } finally {
-          setTimeout(() => URL.revokeObjectURL(downloadUrl), 30_000);
-        }
+        await saveFile(file, props.name);
       } catch (cause) {
         toastManager.add({
           type: "error",

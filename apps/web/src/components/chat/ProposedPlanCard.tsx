@@ -77,7 +77,15 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
   const saveContents = normalizePlanMarkdownForExport(planMarkdown);
 
   const handleDownload = () => {
-    downloadPlanAsTextFile(downloadFilename, saveContents);
+    void downloadPlanAsTextFile(downloadFilename, saveContents).catch((error: unknown) => {
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: "Could not download plan",
+          description: error instanceof Error ? error.message : "An error occurred while saving.",
+        }),
+      );
+    });
   };
 
   const handleCopyPlan = () => {
