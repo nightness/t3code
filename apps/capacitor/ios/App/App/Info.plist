@@ -31,6 +31,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan a T3 pairing QR code.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>T3 Code connects to the T3 server running on your computer over your local network.</string>
 	<key>UIApplicationSceneManifest</key>
