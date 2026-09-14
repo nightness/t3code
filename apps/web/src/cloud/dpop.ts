@@ -21,6 +21,10 @@ export class BrowserDpopError extends Data.TaggedError("BrowserDpopError")<{
   readonly cause?: unknown;
 }> {}
 
+// The proof key stays in IndexedDB even in the native shell, where the connection catalog lives
+// in the iOS Keychain (see makeCatalogBackend in ../connection/storage.ts). It is stored as a
+// non-extractable CryptoKey that JS cannot export; moving it to the Keychain would mean
+// generating it extractable and storing the private JWK, which is weaker than this.
 const DPOP_DATABASE_NAME = "t3code:cloud-auth";
 const DPOP_DATABASE_VERSION = 1;
 const DPOP_KEY_STORE_NAME = "keys";

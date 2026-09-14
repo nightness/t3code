@@ -64,6 +64,7 @@ import { TerminalViewport } from "../ThreadTerminalDrawer";
 import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
 import { ClaudeAI, OpenAI } from "../Icons";
 import { T3Wordmark } from "../T3Wordmark";
+import { ScanPairingQrCodeButton } from "../ScanPairingQrCodeButton";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
@@ -558,6 +559,15 @@ function PairingForm({
                 event.preventDefault();
               }
             }}
+          />
+          <ScanPairingQrCodeButton
+            className="mt-2 w-full"
+            disabled={isPairing}
+            onScanned={(scannedPairingUrl) => {
+              setPairingUrl(scannedPairingUrl);
+              setErrorMessage("");
+            }}
+            onError={setErrorMessage}
           />
         </div>
         {errorMessage ? (

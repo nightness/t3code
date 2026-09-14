@@ -52,6 +52,7 @@ import {
 import { clearComposerDraftsEnvironment } from "../composerDraftStore";
 import { isHostedStaticApp } from "../hostedPairing";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
+import { nativeT3Plugin } from "../nativeShell";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { acknowledgeRpcRequest, trackRpcRequestSent } from "../rpc/requestLatencyState";
 import {
@@ -61,6 +62,7 @@ import {
 } from "./desktopLocal";
 import { connectionStorageLayer } from "./storage";
 import { clientPresentationMetadata } from "./clientMetadata";
+import { type NativeApplicationActiveWakeup, subscribeNativeResumeWakeups } from "./nativeWakeups";
 
 let nextObservedRpcRequestId = 0;
 
@@ -91,23 +93,40 @@ const connectivityLayer = Connectivity.layer({
   ),
 });
 
+/**
+ * Browser and desktop offer "application-active" whenever the page becomes visible. The
+ * Capacitor native shell with its T3Native plugin instead offers the React Native app's
+ * probe-or-reconnect wakeup, chosen by how long it was in the background (./nativeWakeups.ts).
+ * Without the plugin (the Android shell today) it keeps the browser behaviour.
+ */
+export function subscribeApplicationActiveWakeups(
+  target: EventTarget & { readonly visibilityState: DocumentVisibilityState },
+  offer: (wakeup: "application-active" | NativeApplicationActiveWakeup) => void,
+): () => void {
+  if (nativeT3Plugin() !== undefined) {
+    return subscribeNativeResumeWakeups(target, offer);
+  }
+  const listener = () => {
+    if (target.visibilityState === "visible") {
+      offer("application-active");
+    }
+  };
+  target.addEventListener("visibilitychange", listener);
+  return () => {
+    target.removeEventListener("visibilitychange", listener);
+  };
+}
+
 const wakeupsLayer = Wakeups.layer({
   changes: Stream.merge(
-    Stream.callback<"application-active">((queue) =>
+    Stream.callback<"application-active" | NativeApplicationActiveWakeup>((queue) =>
       Effect.acquireRelease(
-        Effect.sync(() => {
-          const listener = () => {
-            if (document.visibilityState === "visible") {
-              Queue.offerUnsafe(queue, "application-active");
-            }
-          };
-          document.addEventListener("visibilitychange", listener);
-          return listener;
-        }),
-        (listener) =>
-          Effect.sync(() => {
-            document.removeEventListener("visibilitychange", listener);
+        Effect.sync(() =>
+          subscribeApplicationActiveWakeups(document, (wakeup) => {
+            Queue.offerUnsafe(queue, wakeup);
           }),
+        ),
+        (unsubscribe) => Effect.sync(unsubscribe),
       ).pipe(Effect.asVoid),
     ),
     managedRelayAccountChanges(appAtomRegistry).pipe(

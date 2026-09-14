@@ -7,6 +7,7 @@ import {
 } from "@t3tools/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import { afterEach, vi } from "vite-plus/test";
 
 import {
   canRetainCachedPlatformRegistrationAfterRefreshFailure,
@@ -17,7 +18,78 @@ import {
   secondaryRegistrationsToRetainAfterTopologyRead,
   secondaryBearerExpiresAtEpochMs,
   secondaryBearerRefreshAtEpochMs,
+  subscribeApplicationActiveWakeups,
 } from "./platform.ts";
+
+describe("application-active wakeups", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function recordWakeups() {
+    const target = Object.assign(new EventTarget(), {
+      visibilityState: "visible" as DocumentVisibilityState,
+    });
+    const offered: string[] = [];
+    const unsubscribe = subscribeApplicationActiveWakeups(target, (wakeup) => {
+      offered.push(wakeup);
+    });
+    const setVisibility = (state: DocumentVisibilityState) => {
+      target.visibilityState = state;
+      target.dispatchEvent(new Event("visibilitychange"));
+    };
+    return { target, offered, unsubscribe, setVisibility };
+  }
+
+  it("offers application-active on every visible transition in the browser", () => {
+    vi.stubGlobal("window", {});
+    const { target, offered, unsubscribe, setVisibility } = recordWakeups();
+
+    setVisibility("hidden");
+    target.dispatchEvent(new Event("resume"));
+    setVisibility("visible");
+    setVisibility("visible");
+    unsubscribe();
+    setVisibility("visible");
+
+    expect(offered).toEqual(["application-active", "application-active"]);
+  });
+
+  it("keeps the browser wakeup in a native shell without the T3Native plugin", () => {
+    vi.stubGlobal("window", { Capacitor: { isNativePlatform: () => true, Plugins: {} } });
+    const { offered, setVisibility } = recordWakeups();
+
+    setVisibility("hidden");
+    setVisibility("visible");
+
+    expect(offered).toEqual(["application-active"]);
+  });
+
+  it("offers the mobile probe or reconnect wakeup in the native shell with the plugin", () => {
+    let now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    vi.stubGlobal("window", {
+      Capacitor: { isNativePlatform: () => true, Plugins: { T3Native: {} } },
+    });
+    const { target, offered, setVisibility } = recordWakeups();
+
+    now = 1_000;
+    setVisibility("hidden");
+    now = 4_000;
+    setVisibility("visible");
+    target.dispatchEvent(new Event("resume"));
+
+    now = 10_000;
+    target.dispatchEvent(new Event("pause"));
+    setVisibility("hidden");
+    now = 20_000;
+    target.dispatchEvent(new Event("resume"));
+    setVisibility("visible");
+
+    expect(offered).toEqual(["application-active-probe", "application-active-reconnect"]);
+  });
+});
 
 const TARGET: DesktopSshEnvironmentTarget = {
   alias: "devbox",
