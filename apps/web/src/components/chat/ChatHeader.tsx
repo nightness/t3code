@@ -48,6 +48,7 @@ import {
   WorkspaceBreadcrumbSeparator,
   WorkspaceBreadcrumbText,
 } from "../WorkspaceBreadcrumb";
+import { useLongPress } from "~/hooks/useLongPress";
 import { cn } from "~/lib/utils";
 import { useIsMobile } from "~/hooks/useMediaQuery";
 import { Button } from "../ui/button";
@@ -312,6 +313,7 @@ export const ChatHeader = memo(function ChatHeader({
     },
     [cancelPendingTitleMenu, closeMenu, startRename],
   );
+  const longPress = useLongPress();
   const handleHeaderContextMenu = useCallback(
     (event: ReactMouseEvent) => {
       if (renamingTitle !== null) return;
@@ -399,6 +401,7 @@ export const ChatHeader = memo(function ChatHeader({
     <div
       className="@container/header-actions flex min-w-0 flex-1 items-center gap-2 sm:gap-3"
       onContextMenu={handleHeaderContextMenu}
+      {...longPress}
     >
       <WorkspaceBreadcrumb
         ariaLabel="Thread breadcrumb"

@@ -215,6 +215,8 @@ import {
   type SidebarProjectSnapshot,
 } from "../sidebarProjectGrouping";
 import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { useLongPress } from "../hooks/useLongPress";
+
 const SIDEBAR_SORT_LABELS: Record<SidebarProjectSortOrder, string> = {
   updated_at: "Last user message",
   created_at: "Created at",
@@ -538,6 +540,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
     },
     [navigateToThread, threadRef],
   );
+  const longPress = useLongPress();
   const handleRowContextMenu = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
@@ -730,6 +733,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
         onDoubleClick={handleRowDoubleClick}
         onKeyDown={handleRowKeyDown}
         onContextMenu={handleRowContextMenu}
+        {...longPress}
       >
         <div className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
           {prStatus && pr && (
@@ -1676,6 +1680,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
     [memberThreadCountByPhysicalKey, removeProject],
   );
 
+  const longPress = useLongPress();
   const handleProjectButtonContextMenu = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       event.preventDefault();
@@ -2371,6 +2376,12 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
           className={isManualProjectSorting ? "cursor-grab active:cursor-grabbing" : undefined}
           {...(isManualProjectSorting && dragHandleProps ? dragHandleProps.attributes : {})}
           {...(isManualProjectSorting && dragHandleProps ? dragHandleProps.listeners : {})}
+          data-long-press={longPress["data-long-press"]}
+          onPointerDown={(event) => {
+            // dnd-kit's activator and the touch long press share this pointerdown.
+            if (isManualProjectSorting) dragHandleProps?.listeners?.onPointerDown?.(event);
+            longPress.onPointerDown(event);
+          }}
           onPointerDownCapture={handleProjectButtonPointerDownCapture}
           onClick={handleProjectButtonClick}
           onKeyDown={handleProjectButtonKeyDown}

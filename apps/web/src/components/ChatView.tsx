@@ -527,6 +527,7 @@ import {
   supportsServerUpdateThreadContinuation,
 } from "../versionSkew";
 import { useAssetUrls } from "../assets/assetUrls";
+import { saveFileFromUrl } from "../lib/saveFile";
 import {
   ATTACHMENT_ONLY_BOOTSTRAP_PROMPT,
   recallableComposerPrompt,
@@ -3344,10 +3345,7 @@ export default function ChatView(props: ChatViewProps) {
           httpBaseUrl: connection.httpBaseUrl,
           createAssetUrl: createAttachmentAssetUrl,
         });
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = attachment.name;
-        anchor.click();
+        await saveFileFromUrl(url, attachment.name);
       } catch (error) {
         toastManager.add({
           type: "error",
