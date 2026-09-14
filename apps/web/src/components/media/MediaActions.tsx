@@ -9,6 +9,7 @@ import type { AssetResource, ContextMenuItem, EnvironmentId } from "@t3tools/con
 import { useCallback, useRef, useState, type ReactElement } from "react";
 
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
+import { useLongPress } from "../../hooks/useLongPress";
 import { readLocalApi } from "../../localApi";
 import { assetEnvironment } from "../../state/assets";
 import { readPreparedConnection } from "../../state/session";
@@ -78,6 +79,7 @@ export function MediaActions({
   children: ReactElement;
 }) {
   const { save, copyImage } = useMediaActions(source);
+  const longPress = useLongPress();
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const menuOpen = useRef(false);
   const reference = source.reference;
@@ -163,6 +165,7 @@ export function MediaActions({
       <TooltipTrigger
         render={children}
         tabIndex={0}
+        {...longPress}
         onContextMenu={(event) => {
           if (event.defaultPrevented) return;
           event.preventDefault();

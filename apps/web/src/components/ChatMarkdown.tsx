@@ -196,6 +196,7 @@ import {
 } from "../browser/openFileInPreview";
 import { resolveLinkTarget } from "../browser/browserLinkTarget";
 import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
+import { useLongPress } from "../hooks/useLongPress";
 
 interface ChatMarkdownProps {
   text: string;
@@ -1891,6 +1892,7 @@ const MarkdownFileLink = memo(function MarkdownFileLink({
   onReveal,
   revealLabel,
 }: MarkdownFileLinkProps) {
+  const longPress = useLongPress();
   const handleOpenInEditor = useCallback(() => {
     if (!onOpen) {
       return;
@@ -2178,6 +2180,7 @@ const MarkdownFileLink = memo(function MarkdownFileLink({
                 handleOpenInFilePreview();
               }}
               onContextMenu={handleContextMenu}
+              {...longPress}
             >
               <FileTagChipContent path={iconPath} label={label} theme={theme} />
             </ContextChip>
@@ -2191,6 +2194,7 @@ const MarkdownFileLink = memo(function MarkdownFileLink({
               data-markdown-copy={copyMarkdown}
               onClick={handleContextMenu}
               onContextMenu={handleContextMenu}
+              {...longPress}
             >
               <FileTagChipContent path={iconPath} label={label} theme={theme} />
             </ContextChip>
@@ -2835,6 +2839,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
       fileLinkChip,
       renderContextReference,
     } = use(ChatMarkdownRendererContext);
+    const longPress = useLongPress();
     const citation = href ? parseAssistantCitationHref(href) : null;
     if (citation) return <AssistantCitationChip citation={citation} />;
     const contextReference = href ? parseComposerContextHref(href) : null;
@@ -2881,6 +2886,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
       const link = (
         <a
           {...props}
+          {...longPress}
           className={cn(props.className, pullRequestAutolink === "commit" && "font-mono")}
           data-markdown-copy={pullRequestCopy}
           href={href}

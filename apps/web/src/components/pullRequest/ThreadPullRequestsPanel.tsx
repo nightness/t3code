@@ -182,6 +182,8 @@ function LinkRow({
           // Hidden means untouchable too: on a touch screen there is no hover, and an invisible
           // layer over the right of the row would otherwise swallow the tap meant for the link.
           "pointer-events-none opacity-0 group-hover/pr-row:pointer-events-auto group-hover/pr-row:opacity-100",
+          // A touch screen has no hover at all, so the actions stay visible and tappable there.
+          "pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
           "has-[[data-popup-open]]:pointer-events-auto has-[[data-popup-open]]:opacity-100",
           "has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100",
         )}
