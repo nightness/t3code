@@ -7,15 +7,18 @@ import { ConnectionCatalogDocument } from "@t3tools/client-runtime/platform";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Deferred from "effect/Deferred";
+import * as Logger from "effect/Logger";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { afterEach, vi } from "vite-plus/test";
 
+import type { NativeT3Plugin } from "../nativeShell";
 import {
   makeBrowserGitHubRoutingPermissions,
   makeCatalogBackend,
   makeCatalogStore,
+  NATIVE_CATALOG_KEYCHAIN_KEY,
 } from "./storage";
 
 const emptyCatalog = {
@@ -85,6 +88,217 @@ describe("makeCatalogBackend", () => {
       expect(error).toBeInstanceOf(ConnectionTransientError);
       expect(error.message).toContain("Desktop secure storage is unavailable");
       expect(setConnectionCatalog).toHaveBeenCalledWith("{}");
+    }),
+  );
+});
+
+/** Just enough of IDBDatabase for the catalog record: get / put / delete on one store. */
+function makeFakeCatalogDatabase(initial: Readonly<Record<string, string>> = {}) {
+  const values = new Map<string, unknown>(Object.entries(initial));
+  const database = {
+    transaction: () => {
+      const transaction = Object.assign(new EventTarget(), { error: null });
+      const complete = () =>
+        queueMicrotask(() => {
+          transaction.dispatchEvent(new Event("complete"));
+        });
+      return Object.assign(transaction, {
+        objectStore: () => ({
+          get: (key: string) => {
+            const request = Object.assign(new EventTarget(), {
+              result: undefined as unknown,
+              error: null,
+            });
+            queueMicrotask(() => {
+              request.result = values.get(key);
+              request.dispatchEvent(new Event("success"));
+            });
+            return request;
+          },
+          put: (value: unknown, key: string) => {
+            values.set(key, value);
+            complete();
+          },
+          delete: (key: string) => {
+            values.delete(key);
+            complete();
+          },
+        }),
+      });
+    },
+  };
+  return { database: database as unknown as IDBDatabase, values };
+}
+
+function makeFakeKeychain(
+  options: { readonly failSet?: boolean; readonly corruptReadBack?: boolean } = {},
+) {
+  const items = new Map<string, string>();
+  const plugin = {
+    keychainGet: vi.fn(async ({ key }: { readonly key: string }) => {
+      const value = items.get(key);
+      return {
+        value: value === undefined ? null : options.corruptReadBack ? `${value}~` : value,
+      };
+    }),
+    keychainSet: vi.fn(async ({ key, value }: { readonly key: string; readonly value: string }) => {
+      if (options.failSet) {
+        throw Object.assign(new Error("Keychain write failed (OSStatus -34018)."), {
+          code: "keychain",
+        });
+      }
+      items.set(key, value);
+      return {};
+    }),
+    keychainRemove: vi.fn(async ({ key }: { readonly key: string }) => {
+      items.delete(key);
+      return {};
+    }),
+  };
+  return { plugin, items };
+}
+
+/** Replaces the default logger so a test can count the backend's warnings. */
+function captureLogs() {
+  const messages: unknown[] = [];
+  const layer = Logger.layer([
+    Logger.make((options) => {
+      messages.push(options.message);
+    }),
+  ]);
+  return { messages, layer };
+}
+
+function stubNativeShell(plugin: NativeT3Plugin | undefined) {
+  vi.stubGlobal("window", {
+    Capacitor: {
+      isNativePlatform: () => true,
+      Plugins: plugin === undefined ? {} : { T3Native: plugin },
+    },
+  });
+}
+
+describe("makeCatalogBackend in the native shell", () => {
+  it.effect("reads and writes the catalog through the Keychain", () =>
+    Effect.gen(function* () {
+      const { plugin, items } = makeFakeKeychain();
+      items.set(NATIVE_CATALOG_KEYCHAIN_KEY, "stored");
+      stubNativeShell(plugin);
+      const { database, values } = makeFakeCatalogDatabase({ document: "stale" });
+      const backend = makeCatalogBackend(database);
+
+      expect(yield* backend.read).toBe("stored");
+      yield* backend.write("next");
+
+      expect(plugin.keychainGet).toHaveBeenCalledWith({ key: NATIVE_CATALOG_KEYCHAIN_KEY });
+      expect(plugin.keychainSet).toHaveBeenCalledWith({
+        key: NATIVE_CATALOG_KEYCHAIN_KEY,
+        value: "next",
+      });
+      expect(items.get(NATIVE_CATALOG_KEYCHAIN_KEY)).toBe("next");
+      // Once the Keychain holds the catalog, IndexedDB is neither read nor touched.
+      expect(values.get("document")).toBe("stale");
+    }),
+  );
+
+  it.effect("treats an empty Keychain and an empty IndexedDB as no catalog yet", () =>
+    Effect.gen(function* () {
+      const { plugin, items } = makeFakeKeychain();
+      stubNativeShell(plugin);
+      const { database, values } = makeFakeCatalogDatabase();
+      const backend = makeCatalogBackend(database);
+
+      expect(yield* backend.read).toBeNull();
+      yield* backend.write("first");
+
+      expect(items.get(NATIVE_CATALOG_KEYCHAIN_KEY)).toBe("first");
+      expect(values.size).toBe(0);
+    }),
+  );
+
+  it.effect("fails reads the Keychain refuses instead of treating them as missing", () =>
+    Effect.gen(function* () {
+      const { plugin } = makeFakeKeychain();
+      plugin.keychainGet.mockRejectedValueOnce(new Error("OSStatus -25308"));
+      stubNativeShell(plugin);
+      const { database, values } = makeFakeCatalogDatabase({ document: "legacy" });
+
+      const error = yield* makeCatalogBackend(database).read.pipe(Effect.flip);
+
+      expect(error).toBeInstanceOf(ConnectionTransientError);
+      expect(values.get("document")).toBe("legacy");
+      expect(plugin.keychainSet).not.toHaveBeenCalled();
+    }),
+  );
+
+  it.effect(
+    "moves an IndexedDB catalog into the Keychain, then deletes the IndexedDB record",
+    () => {
+      const logs = captureLogs();
+      return Effect.gen(function* () {
+        const { plugin, items } = makeFakeKeychain();
+        stubNativeShell(plugin);
+        const { database, values } = makeFakeCatalogDatabase({ document: "legacy" });
+        const backend = makeCatalogBackend(database);
+
+        expect(yield* backend.read).toBe("legacy");
+        expect(items.get(NATIVE_CATALOG_KEYCHAIN_KEY)).toBe("legacy");
+        expect(values.has("document")).toBe(false);
+
+        yield* backend.write("next");
+        expect(items.get(NATIVE_CATALOG_KEYCHAIN_KEY)).toBe("next");
+        expect(values.has("document")).toBe(false);
+        expect(logs.messages).toEqual([]);
+      }).pipe(Effect.provide(logs.layer));
+    },
+  );
+
+  it.effect("keeps the IndexedDB catalog for the session when the Keychain write fails", () => {
+    const logs = captureLogs();
+    return Effect.gen(function* () {
+      const { plugin, items } = makeFakeKeychain({ failSet: true });
+      stubNativeShell(plugin);
+      const { database, values } = makeFakeCatalogDatabase({ document: "legacy" });
+      const backend = makeCatalogBackend(database);
+
+      expect(yield* backend.read).toBe("legacy");
+      expect(values.get("document")).toBe("legacy");
+      expect(items.size).toBe(0);
+
+      yield* backend.write("next");
+      expect(values.get("document")).toBe("next");
+      expect(plugin.keychainSet).toHaveBeenCalledTimes(1);
+      expect(logs.messages).toHaveLength(1);
+    }).pipe(Effect.provide(logs.layer));
+  });
+
+  it.effect("removes a Keychain copy whose read-back does not match and keeps IndexedDB", () => {
+    const logs = captureLogs();
+    return Effect.gen(function* () {
+      const { plugin, items } = makeFakeKeychain({ corruptReadBack: true });
+      stubNativeShell(plugin);
+      const { database, values } = makeFakeCatalogDatabase({ document: "legacy" });
+
+      expect(yield* makeCatalogBackend(database).read).toBe("legacy");
+
+      expect(plugin.keychainRemove).toHaveBeenCalledWith({ key: NATIVE_CATALOG_KEYCHAIN_KEY });
+      expect(items.size).toBe(0);
+      expect(values.get("document")).toBe("legacy");
+      expect(logs.messages).toHaveLength(1);
+    }).pipe(Effect.provide(logs.layer));
+  });
+
+  it.effect("stays on IndexedDB when the T3Native plugin or its Keychain methods are absent", () =>
+    Effect.gen(function* () {
+      for (const plugin of [undefined, { scanQRCode: async () => ({ value: "" }) }]) {
+        stubNativeShell(plugin);
+        const { database, values } = makeFakeCatalogDatabase({ document: "legacy" });
+        const backend = makeCatalogBackend(database);
+
+        expect(yield* backend.read).toBe("legacy");
+        yield* backend.write("next");
+        expect(values.get("document")).toBe("next");
+      }
     }),
   );
 });

@@ -42,6 +42,7 @@ import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import { projectFaviconCache } from "../assets/projectFaviconCache";
+import { nativeT3Plugin } from "../nativeShell";
 
 const DATABASE_NAME = "t3code:connection-runtime";
 const DATABASE_VERSION = 4;
@@ -271,6 +272,147 @@ export interface CatalogBackend {
   readonly quarantine?: (raw: string) => Effect.Effect<void, ConnectionTransientError>;
 }
 
+/** The Keychain item the React Native app also uses for its connection catalog. */
+export const NATIVE_CATALOG_KEYCHAIN_KEY = "t3code.connection-catalog.v1";
+
+interface NativeCatalogKeychain {
+  readonly get: () => Promise<{ readonly value?: string | null }>;
+  readonly set: (value: string) => Promise<unknown>;
+  readonly remove: () => Promise<unknown>;
+}
+
+function nativeCatalogKeychain(): NativeCatalogKeychain | undefined {
+  const plugin = nativeT3Plugin();
+  if (
+    plugin === undefined ||
+    typeof plugin.keychainGet !== "function" ||
+    typeof plugin.keychainSet !== "function" ||
+    typeof plugin.keychainRemove !== "function"
+  ) {
+    return undefined;
+  }
+  return {
+    get: () => plugin.keychainGet!({ key: NATIVE_CATALOG_KEYCHAIN_KEY }),
+    set: (value) => plugin.keychainSet!({ key: NATIVE_CATALOG_KEYCHAIN_KEY, value }),
+    remove: () => plugin.keychainRemove!({ key: NATIVE_CATALOG_KEYCHAIN_KEY }),
+  };
+}
+
+interface IndexedDbCatalogBackend extends CatalogBackend {
+  readonly quarantine: (raw: string) => Effect.Effect<void, ConnectionTransientError>;
+  readonly remove: Effect.Effect<void, ConnectionTransientError>;
+}
+
+function makeIndexedDbCatalogBackend(database: IDBDatabase): IndexedDbCatalogBackend {
+  return {
+    read: readDatabaseValue(database, CATALOG_STORE_NAME, CATALOG_KEY).pipe(
+      Effect.map((value) => (typeof value === "string" ? value : null)),
+    ),
+    write: (raw) => writeDatabaseValue(database, CATALOG_STORE_NAME, CATALOG_KEY, raw),
+    quarantine: (raw) =>
+      writeDatabaseValue(database, CATALOG_STORE_NAME, `${CATALOG_KEY}:corrupt:${Date.now()}`, raw),
+    remove: removeDatabaseValue(database, CATALOG_STORE_NAME, CATALOG_KEY),
+  };
+}
+
+/**
+ * The native shell keeps the catalog JSON (bearer tokens, relay DPoP access tokens, profiles) in
+ * the iOS Keychain through the T3Native plugin, the way the desktop app keeps it in its secure
+ * storage. Like the desktop branch it stores the serialized document verbatim, a failed read or
+ * write is a catalog error, and a missing item (`value: null`) reads as "no catalog yet".
+ *
+ * The first read of a session decides where the catalog lives:
+ * 1. The Keychain has a catalog: use it.
+ * 2. Neither store has one: use the Keychain from now on.
+ * 3. Only IndexedDB has one (an install that predates this): copy it into the Keychain, read it
+ *    back and compare, and only then delete the IndexedDB record. If the write or the read-back
+ *    fails, keep the IndexedDB copy (it may be the only copy of the credentials), drop any partial
+ *    Keychain copy so the next launch retries, and use IndexedDB for the rest of this session.
+ */
+function makeNativeKeychainCatalogBackend(
+  keychain: NativeCatalogKeychain,
+  indexedDb: IndexedDbCatalogBackend,
+): CatalogBackend {
+  let location: "undecided" | "keychain" | "indexeddb" = "undecided";
+
+  const readKeychain = Effect.tryPromise({
+    try: () => keychain.get(),
+    catch: (cause) => catalogError("load", cause),
+  }).pipe(Effect.map((result) => (typeof result?.value === "string" ? result.value : null)));
+  const writeKeychain = (raw: string) =>
+    Effect.tryPromise({
+      try: () => keychain.set(raw),
+      catch: (cause) => catalogError("save", cause),
+    }).pipe(Effect.asVoid);
+
+  const migrateFromIndexedDb = Effect.fn("web.connectionStorage.migrateCatalogToKeychain")(
+    function* (raw: string) {
+      const failure = yield* writeKeychain(raw).pipe(
+        Effect.andThen(readKeychain),
+        Effect.match({
+          onFailure: (error) => error.message,
+          onSuccess: (stored) =>
+            stored === raw ? null : "the Keychain read-back did not match the saved catalog",
+        }),
+      );
+      if (failure !== null) {
+        location = "indexeddb";
+        yield* Effect.tryPromise({
+          try: () => keychain.remove(),
+          catch: (cause) => catalogError("remove", cause),
+        }).pipe(Effect.ignore);
+        yield* Effect.logWarning(
+          "Could not move saved environments into the Keychain; keeping them in IndexedDB for this session.",
+          { error: failure },
+        );
+        return;
+      }
+      location = "keychain";
+      yield* indexedDb.remove.pipe(
+        Effect.catch((error) =>
+          Effect.logWarning(
+            "Moved saved environments into the Keychain but could not delete the IndexedDB copy.",
+            { error: error.message },
+          ),
+        ),
+      );
+    },
+  );
+
+  const read: CatalogBackend["read"] = Effect.gen(function* () {
+    if (location === "indexeddb") {
+      return yield* indexedDb.read;
+    }
+    const stored = yield* readKeychain;
+    if (location === "keychain" || stored !== null) {
+      location = "keychain";
+      return stored;
+    }
+    const legacy = yield* indexedDb.read;
+    if (legacy === null) {
+      location = "keychain";
+      return null;
+    }
+    yield* migrateFromIndexedDb(legacy);
+    return legacy;
+  }).pipe(Effect.withSpan("web.connectionStorage.readNativeCatalog"));
+
+  return {
+    read,
+    write: (raw) =>
+      Effect.gen(function* () {
+        if (location === "undecided") {
+          yield* read;
+        }
+        if (location === "indexeddb") {
+          return yield* indexedDb.write(raw);
+        }
+        yield* writeKeychain(raw);
+      }),
+    quarantine: (raw) => (location === "indexeddb" ? indexedDb.quarantine(raw) : Effect.void),
+  };
+}
+
 export function makeCatalogBackend(database: IDBDatabase): CatalogBackend {
   const bridge = window.desktopBridge;
   if (bridge?.getConnectionCatalog !== undefined && bridge.setConnectionCatalog !== undefined) {
@@ -298,13 +440,16 @@ export function makeCatalogBackend(database: IDBDatabase): CatalogBackend {
     };
   }
 
+  const indexedDb = makeIndexedDbCatalogBackend(database);
+  const keychain = nativeCatalogKeychain();
+  if (keychain !== undefined) {
+    return makeNativeKeychainCatalogBackend(keychain, indexedDb);
+  }
+
   return {
-    read: readDatabaseValue(database, CATALOG_STORE_NAME, CATALOG_KEY).pipe(
-      Effect.map((value) => (typeof value === "string" ? value : null)),
-    ),
-    write: (raw) => writeDatabaseValue(database, CATALOG_STORE_NAME, CATALOG_KEY, raw),
-    quarantine: (raw) =>
-      writeDatabaseValue(database, CATALOG_STORE_NAME, `${CATALOG_KEY}:corrupt:${Date.now()}`, raw),
+    read: indexedDb.read,
+    write: indexedDb.write,
+    quarantine: indexedDb.quarantine,
   };
 }
 

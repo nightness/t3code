@@ -120,6 +120,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { Button } from "../ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
 import { AnimatedHeight } from "../AnimatedHeight";
+import { ScanPairingQrCodeButton } from "../ScanPairingQrCodeButton";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { Textarea } from "../ui/textarea";
 import { getPairingTokenFromUrl, setPairingTokenOnUrl } from "../../pairingUrl";
@@ -2659,6 +2660,21 @@ export function ConnectionsSettings() {
           />
         </label>
       </div>
+      <ScanPairingQrCodeButton
+        className="w-full"
+        disabled={isAddingSavedBackend}
+        onScanned={handleSavedBackendHostChange}
+        onError={(message) => {
+          setSavedBackendError(message);
+          toastManager.add(
+            stackedThreadToast({
+              type: "error",
+              title: "Could not scan QR code",
+              description: message,
+            }),
+          );
+        }}
+      />
       <div>
         <span className="mt-1 block text-[11px] text-muted-foreground">
           Paste a full pairing URL here to fill both fields automatically.
