@@ -1,0 +1,6 @@
+node_modules/
+# Copied from apps/web/out by scripts/copy-web.mjs.
+www/
+# xcodebuild -derivedDataPath ../build (from ios/App). ios/.gitignore only covers
+# ios/App/build and ios/DerivedData; android/.gitignore already covers Gradle build/.
+ios/build/

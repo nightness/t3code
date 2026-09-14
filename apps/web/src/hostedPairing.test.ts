@@ -11,6 +11,7 @@ import {
 describe("hostedPairing", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it("reads hosted pairing host and query token parameters", () => {
@@ -90,5 +91,23 @@ describe("hostedPairing", () => {
 
     vi.stubEnv("VITE_HTTP_URL", "https://backend.example.com");
     expect(isHostedStaticApp(new URL("https://nightly.app.t3.codes/"))).toBe(false);
+  });
+
+  it("treats the Capacitor native shell as a hosted static app", () => {
+    vi.stubEnv("VITE_HOSTED_APP_URL", "https://app.t3.codes");
+    vi.stubEnv("VITE_HOSTED_APP_CHANNEL", "");
+    vi.stubEnv("VITE_HTTP_URL", "");
+    vi.stubEnv("VITE_WS_URL", "");
+    vi.stubGlobal("window", { Capacitor: { isNativePlatform: () => true } });
+
+    expect(isHostedStaticApp(new URL("capacitor://localhost/"))).toBe(true);
+    expect(isHostedStaticApp(new URL("https://localhost/"))).toBe(true);
+
+    vi.stubEnv("VITE_HTTP_URL", "https://backend.example.com");
+    expect(isHostedStaticApp(new URL("capacitor://localhost/"))).toBe(false);
+
+    vi.stubEnv("VITE_HTTP_URL", "");
+    vi.stubGlobal("window", { Capacitor: { isNativePlatform: () => false } });
+    expect(isHostedStaticApp(new URL("https://localhost/"))).toBe(false);
   });
 });

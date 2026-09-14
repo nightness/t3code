@@ -109,7 +109,10 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
   --glass-saturation: 1.14;
   --desktop-window-right-resize-inset: 0px;
   --workspace-topbar-height: 52px;
-  --workspace-controls-top: 0px;
+  /* Fixed-position controls sit outside #root's safe-area padding, so they
+     carry the top inset themselves (a native iOS shell draws under the
+     status bar; browsers and desktop resolve it to 0). */
+  --workspace-controls-top: env(safe-area-inset-top, 0px);
   --workspace-controls-left: calc(env(safe-area-inset-left) + 0.75rem);
   --workspace-controls-right: calc(env(safe-area-inset-right) + 0.75rem);
   --workspace-native-controls-inset: 0px;
