@@ -41,9 +41,13 @@ describe.skipIf(NodeOS.platform() !== "darwin")(
           "-o",
           executable,
         ],
-        { timeout: 30_000, encoding: "utf8" },
+        // swiftc takes about three seconds here on an idle machine. The bound only
+        // exists to stop a wedged compiler from hanging the run, so it is sized for a
+        // host already saturated by the parallel workspace suites, where a 30 second
+        // bound is reached well before the compile finishes.
+        { timeout: 180_000, encoding: "utf8" },
       );
-    });
+    }, 240_000);
 
     afterAll(() => {
       if (directory) NodeFS.rmSync(directory, { recursive: true, force: true });
@@ -54,12 +58,18 @@ describe.skipIf(NodeOS.platform() !== "darwin")(
       ["handoff", "delivers responses to delegates registering during delivery"],
       ["pending", "retains new responses received while replaying pending responses"],
       ["concurrent", "registers, removes, and broadcasts concurrently without data races"],
-    ])("%s: %s", (name) => {
-      const output = NodeChildProcess.execFileSync(executable, [name], {
-        encoding: "utf8",
-        timeout: 15_000,
-      });
-      expect(output.trim()).toBe("passed");
-    });
+    ])(
+      "%s: %s",
+      (name) => {
+        const output = NodeChildProcess.execFileSync(executable, [name], {
+          encoding: "utf8",
+          // Under three seconds each on an idle machine; the bound is sized for a host
+          // saturated by the parallel workspace suites.
+          timeout: 60_000,
+        });
+        expect(output.trim()).toBe("passed");
+      },
+      120_000,
+    );
   },
 );
