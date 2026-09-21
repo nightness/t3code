@@ -12,6 +12,13 @@ import { WorkerPoolManager, type WorkerRequest, type WorkerResponse } from "@pie
 import * as NodeWorkerThreads from "node:worker_threads";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
+// Every case boots a real worker pool and a Shiki WASM highlighter over a 7,000 line
+// document. That costs 2-7 seconds per test when this file runs on its own, 8-33
+// seconds once the rest of apps/web runs alongside it, and longer still when the
+// workspaces run in parallel, where the project's 15 second budget expires long
+// before the work finishes. Raise it for this file rather than for all of apps/web.
+vi.setConfig({ hookTimeout: 300_000, testTimeout: 300_000 });
+
 type DocumentChange = NonNullable<ReturnType<TextDocument<unknown>["applyEdits"]>>;
 interface Tokenizer {
   readonly themeType: "light" | "dark";
