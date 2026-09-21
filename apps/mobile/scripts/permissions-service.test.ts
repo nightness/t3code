@@ -56,13 +56,18 @@ it.skipIf(NodeOS.platform() !== "darwin")(
           "-o",
           executable,
         ],
-        { encoding: "utf8", timeout: 30_000 },
+        // The clang build and the sanitized binary take a couple of seconds between
+        // them on an idle machine. These bounds only exist to stop a wedged toolchain
+        // from hanging the run, so they are sized for a host already saturated by the
+        // parallel workspace suites rather than for the idle case.
+        { encoding: "utf8", timeout: 180_000 },
       );
       expect(
-        NodeChildProcess.execFileSync(executable, { encoding: "utf8", timeout: 15_000 }).trim(),
+        NodeChildProcess.execFileSync(executable, { encoding: "utf8", timeout: 60_000 }).trim(),
       ).toBe("passed");
     } finally {
       NodeFS.rmSync(directory, { recursive: true, force: true });
     }
   },
+  240_000,
 );

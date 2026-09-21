@@ -214,11 +214,20 @@ it.each(["25.11", "26.04", "niri 26.04 (abc)"])("accepts Niri version %s", async
 it.each(["garbage\n", "x".repeat(4 * 1024 * 1024 + 1)])(
   "bounds malformed compositor replies",
   async (reply) => {
+    // The oversized case pushes 4 MiB through the socket, which already takes over a
+    // second on an idle machine and much longer once the workspaces run in parallel.
+    // Freeze only the timer the snapshot watchdog arms so this case asserts the guard
+    // that rejected the reply rather than racing the watchdog to the rejection; the
+    // watchdog keeps its own test below.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     handler = async (_request, socket) => {
       socket.write(reply);
     };
     await expect(checkNiriCaptureSupport(socketPath)).rejects.toThrow(/invalid|oversized/);
   },
+  // The 4 MiB round trip costs about 1.5 seconds on its own but runs past the
+  // project's 15 second budget once the workspaces run in parallel.
+  120_000,
 );
 
 it("fails promptly when Niri disconnects", async () => {
