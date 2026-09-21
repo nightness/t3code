@@ -50,12 +50,20 @@
       "ignoreDependencies": ["playwright-core", "electron-builder"],
     },
     "apps/web": {
-      // Worktree setup invokes this directly from t3.json.
-      "entry": ["scripts/warm-dep-cache.ts"],
+      // Worktree setup invokes this directly from t3.json. The denext CLI reads
+      // denext.config.ts by filename, and `deno desktop` runs desktop.ts as its entry.
+      "entry": ["scripts/warm-dep-cache.ts", "denext.config.ts!", "desktop.ts!"],
       // UI component modules are copied and adapted as cohesive sets. Keep their
       // named subcomponents even before they have callers; the file audit still
       // reports an entire component module when nothing imports it.
       "ignoreIssues": { "src/components/ui/*.tsx": ["exports", "nsExports", "duplicates"] },
+    },
+    "apps/capacitor": {
+      // The Capacitor CLI reads capacitor.config.ts by filename, and the sync script
+      // runs from package.json. ios/ and android/ are native projects, and their
+      // public/ + www/ hold the web build `cap sync` copies in.
+      "entry": ["capacitor.config.ts!", "scripts/copy-web.mjs!"],
+      "ignore": ["ios/**", "android/**", "www/**"],
     },
     "apps/mobile": {
       // Expo loads plugins by string; Metro embeds the browser entry in the native WebView.
