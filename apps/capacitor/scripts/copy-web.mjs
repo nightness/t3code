@@ -14,7 +14,7 @@ const source = NodePath.resolve(appDir, "../web/out");
 const target = NodePath.resolve(appDir, "www");
 const repoRoot = NodePath.resolve(appDir, "../..");
 // The same denext CLI apps/web/deno.json pins for its tasks.
-const DENEXT_CLI = "jsr:@denext/denext@2.7.0/cli";
+const DENEXT_CLI = "jsr:@denext/denext@2.7.1/cli";
 
 if (!NodeFS.existsSync(NodePath.join(source, "index.html"))) {
   console.error(
