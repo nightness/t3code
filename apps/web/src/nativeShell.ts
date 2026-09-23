@@ -52,3 +52,33 @@ export function nativeT3Plugin(): NativeT3Plugin | undefined {
   const plugin = capacitorGlobal()?.Plugins?.T3Native;
   return typeof plugin === "object" && plugin !== null ? plugin : undefined;
 }
+
+const EXTERNAL_URL_PROTOCOLS: ReadonlySet<string> = new Set(["http:", "https:", "mailto:", "tel:"]);
+
+/**
+ * Opens `url` in the system browser (or mail / phone app) from the native shell and returns
+ * true; returns false, doing nothing, anywhere else or for a URL it will not hand over, so the
+ * caller keeps its own path. The iOS WKWebView silently blocks a `window.open` that does not run
+ * inside the tap (after an `await`, say), because Capacitor leaves
+ * `javaScriptCanOpenWindowsAutomatically` off. A top-level navigation to anything but the app's
+ * own URL needs no gesture: Capacitor's `decidePolicyFor` cancels it and passes the URL to
+ * `UIApplication.shared.open`, and Android's `shouldOverrideUrlLoading` launches an intent.
+ * Only absolute http(s)/mailto/tel URLs qualify. A relative URL, `javascript:`, `data:`, `blob:`
+ * and the app's own origin (which would load in place of the app) are refused.
+ */
+export function openExternalUrl(url: string): boolean {
+  if (!isNativeShell()) return false;
+  let target: URL;
+  try {
+    // No base URL, so anything relative throws and stays with the caller.
+    target = new URL(url);
+  } catch {
+    return false;
+  }
+  if (!EXTERNAL_URL_PROTOCOLS.has(target.protocol)) return false;
+  const { location } = window;
+  const isWeb = target.protocol === "http:" || target.protocol === "https:";
+  if (isWeb && target.origin === location.origin) return false;
+  location.assign(target.href);
+  return true;
+}

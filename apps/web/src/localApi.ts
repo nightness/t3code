@@ -3,6 +3,7 @@ import type { ConfirmDialogOptions, ContextMenuItem, LocalApi } from "@t3tools/c
 import { requestConfirmDialog } from "./confirmDialog";
 import { dismissContextMenu, showContextMenuFallback } from "./contextMenuFallback";
 import { readBrowserClientSettings, writeBrowserClientSettings } from "./clientPersistenceStorage";
+import { openExternalUrl } from "./nativeShell";
 
 let cachedApi: LocalApi | undefined;
 
@@ -26,6 +27,9 @@ function createBrowserLocalApi(): LocalApi {
           }
           return;
         }
+        // The Capacitor iOS webview blocks a window.open that is not inside the
+        // tap (every caller here awaits first); a navigation still reaches Safari.
+        if (openExternalUrl(url)) return;
 
         window.open(url, "_blank", "noopener,noreferrer");
       },
