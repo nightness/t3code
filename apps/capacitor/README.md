@@ -55,6 +55,40 @@ This is separate from `apps/mobile`, the Expo / React Native client.
 The app connects over plain `http://<host>:3773` and `ws://<host>:3773/ws` with bearer-token
 auth. The server's CORS already allows any origin plus the `Authorization` / `DPoP` headers.
 
+## OTA UI updates
+
+The shell can pull its web UI from the T3 server it is paired with, so UI fixes reach the
+phone without a new app build. denext does the work: the native `DenextOta` plugin (installed
+by `denext mobile add-ota`, see `ios/App/App/Denext*.swift` and `android/.../dev/denext/ota/`),
+the `_denext/ota.json` manifest, and `checkForUiUpdate` / `otaBooted` from `denext/mobile`.
+Rollback, verification and serving rules are in denext's docs:
+[Over-the-air UI updates](https://denext.dev/docs/desktop). It is off by default.
+
+T3's part:
+
+- **Server.** `T3CODE_MOBILE_UI_DIR` names a stamped web export. The server then serves
+  `GET /api/mobile/ui/_denext/ota.json` and `GET /api/mobile/ui/<path>` (only the paths the
+  manifest lists, `Cache-Control: no-store`), behind the same bearer auth as the rest of the
+  environment API. It rereads the manifest when its mtime changes, so no restart is needed.
+- **Web** (`apps/web/src/ota.ts`). Inside the shell, after the first render and on each resume
+  that counts as a reconnect (10 s or more in the background), it checks the first saved,
+  switched-on bearer environment at `<httpBaseUrl>/api/mobile/ui`.
+- **Bundle.** `pnpm web:copy` stamps `www/_denext/ota.json` after branding, so an unchanged
+  export is never downloaded.
+
+**Prepare the server's export.** Stamp it after branding, exactly as `web:copy` does:
+
+```sh
+cd apps/web && deno task export
+# The script resolves its target against the repo root, whatever the working directory.
+node ../../scripts/apply-web-brand-assets.ts production apps/web/out
+deno run -A --node-modules-dir=none <denext CLI> ota manifest out   # see DENEXT_CLI in scripts/copy-web.mjs
+T3CODE_MOBILE_UI_DIR="$PWD/out" t3 serve --host 0.0.0.0
+```
+
+Over LAN `http`, the SHA-256 checks catch corruption but not a man-in-the-middle; use TLS end
+to end (for example Tailscale HTTPS) where that matters.
+
 ## Cleartext and local-network notes
 
 The app is served from a secure origin but talks to an `http://` / `ws://` server, so both

@@ -90,6 +90,11 @@ export class ServerConfig extends Context.Service<
     readonly cwd: string;
     readonly baseDir: string;
     readonly staticDir: string | undefined;
+    /**
+     * A web UI export the Capacitor shell may pull over the air (`T3CODE_MOBILE_UI_DIR`), stamped
+     * with denext's `_denext/ota.json`. Unset keeps the `/api/mobile/ui/*` routes off.
+     */
+    readonly mobileUiDir?: string | undefined;
     readonly devUrl: URL | undefined;
     readonly devAuthToken?: Redacted.Redacted<string> | undefined;
     readonly devAllowedOrigins: ReadonlyArray<string>;
