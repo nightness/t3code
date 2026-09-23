@@ -67,6 +67,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("LocalApi", () => {
@@ -160,5 +161,41 @@ describe("LocalApi", () => {
 
     await api.persistence.setClientSettings(settings);
     await expect(api.persistence.getClientSettings()).resolves.toEqual(settings);
+  });
+
+  it("opens external links in a new browser tab without a desktop bridge", async () => {
+    const open = vi.fn();
+    vi.stubGlobal("open", open);
+    const { createLocalApi } = await import("./localApi");
+
+    await createLocalApi().shell.openExternal("https://github.com/pingdotgg/t3code/pull/1");
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      "https://github.com/pingdotgg/t3code/pull/1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  });
+
+  it("navigates to external links in the native shell, where a late window.open is blocked", async () => {
+    const open = vi.fn();
+    const assign = vi.fn();
+    vi.stubGlobal("open", open);
+    vi.stubGlobal("Capacitor", { isNativePlatform: () => true });
+    vi.stubGlobal("location", { origin: "capacitor://localhost", assign });
+    const { createLocalApi } = await import("./localApi");
+    const api = createLocalApi();
+
+    await api.shell.openExternal("https://github.com/pingdotgg/t3code/pull/1");
+    expect(assign).toHaveBeenCalledExactlyOnceWith("https://github.com/pingdotgg/t3code/pull/1");
+    expect(open).not.toHaveBeenCalled();
+
+    // A URL the shell will not navigate to keeps the old path.
+    await api.shell.openExternal("vscode://vscode-remote/ssh-remote+host/repo");
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      "vscode://vscode-remote/ssh-remote+host/repo",
+      "_blank",
+      "noopener,noreferrer",
+    );
   });
 });
