@@ -37,6 +37,7 @@ import {
   validateAttachmentUploadToken,
 } from "./assets/AttachmentUpload.ts";
 import * as BrowserTraceCollector from "./observability/BrowserTraceCollector.ts";
+import { makeMobileUiExport, MOBILE_UI_MANIFEST_PATH } from "./mobileUi.ts";
 import * as EnvironmentAuth from "./auth/EnvironmentAuth.ts";
 import { traceRelayRequest } from "./cloud/traceRelayRequest.ts";
 import {
@@ -370,6 +371,84 @@ export const otlpTracesProxyRouteLayer = HttpRouter.add(
       EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
     }),
   ),
+);
+
+const MOBILE_UI_PREFIX = "/api/mobile/ui";
+
+const mobileUiNoStore = { "Cache-Control": "no-store" } as const;
+const mobileUiNotFound = () =>
+  HttpServerResponse.text("Not Found", { status: 404, headers: mobileUiNoStore });
+
+/** The export-relative path a files request names, or undefined for malformed encoding. */
+function decodeMobileUiPath(pathname: string): string | undefined {
+  try {
+    return decodeURIComponent(pathname.slice(`${MOBILE_UI_PREFIX}/`.length));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Over-the-air UI for the Capacitor shell (apps/capacitor/README.md, "OTA UI updates"): the
+ * export in `T3CODE_MOBILE_UI_DIR`, stamped by `denext ota manifest`, served to denext's
+ * `checkForUiUpdate` and native `DenextOta` plugin. Both routes authenticate first, so an
+ * unauthenticated caller cannot tell whether the feature is on, and then 404 while it is off.
+ * The files route serves only paths the manifest lists (./mobileUi.ts).
+ */
+export const mobileUiRouteLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* ServerConfig.ServerConfig;
+    const mobileUi = yield* makeMobileUiExport(config.mobileUiDir);
+
+    const manifestRoute = HttpRouter.add(
+      "GET",
+      `${MOBILE_UI_PREFIX}/${MOBILE_UI_MANIFEST_PATH}`,
+      Effect.gen(function* () {
+        yield* authenticateRawRouteWithScope(AuthOrchestrationReadScope);
+        const manifest = yield* mobileUi.manifest;
+        if (Option.isNone(manifest)) return mobileUiNotFound();
+        return HttpServerResponse.jsonUnsafe(manifest.value, { headers: mobileUiNoStore });
+      }).pipe(
+        Effect.catchTags({
+          EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
+          EnvironmentInternalError: HttpServerRespondable.toResponse,
+          EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
+        }),
+      ),
+    );
+
+    const fileRoute = HttpRouter.add(
+      "GET",
+      `${MOBILE_UI_PREFIX}/*`,
+      Effect.gen(function* () {
+        yield* authenticateRawRouteWithScope(AuthOrchestrationReadScope);
+        const url = HttpServerRequest.toURL(yield* HttpServerRequest.HttpServerRequest);
+        const relativePath = Option.isSome(url)
+          ? decodeMobileUiPath(url.value.pathname)
+          : undefined;
+        if (relativePath === undefined) return mobileUiNotFound();
+        const file = yield* mobileUi.resolveFile(relativePath);
+        if (Option.isNone(file)) return mobileUiNotFound();
+        return yield* HttpServerResponse.file(file.value, {
+          headers: {
+            ...mobileUiNoStore,
+            "X-Content-Type-Options": "nosniff",
+            // The shell downloads these; a browser that opens one must not run it here.
+            "Content-Security-Policy": "default-src 'none'; sandbox",
+          },
+          contentType: Option.getOrElse(Mime.getType(file.value), () => "application/octet-stream"),
+        }).pipe(Effect.orElseSucceed(mobileUiNotFound));
+      }).pipe(
+        Effect.catchTags({
+          EnvironmentAuthInvalidError: HttpServerRespondable.toResponse,
+          EnvironmentInternalError: HttpServerRespondable.toResponse,
+          EnvironmentScopeRequiredError: HttpServerRespondable.toResponse,
+        }),
+      ),
+    );
+
+    return Layer.mergeAll(manifestRoute, fileRoute);
+  }),
 );
 
 export const assetRouteLayer = HttpRouter.add(

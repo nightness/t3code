@@ -225,6 +225,7 @@ import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
 import { DEFAULT_SIGNAL_EXPORT, otlpSerializationLayer } from "@t3tools/shared/observability";
 import * as OtelEnvironment from "@t3tools/shared/otelEnvironment";
 
+const encodeMobileUiManifestJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 const defaultProjectId = ProjectId.make("project-default");
 const defaultThreadId = ThreadId.make("thread-default");
 const defaultDesktopBootstrapToken = "test-desktop-bootstrap-token";
@@ -5448,6 +5449,179 @@ it.layer(NodeServices.layer)("server router seam", (it) => {
         assert.deepEqual(record.scope.attributes, {});
         assert.equal(record.resourceAttributes["service.name"], "t3-web");
         assert.equal(record.status?.code, String(span.status.code));
+      }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  // A web export as `denext ota manifest` leaves it. The server never recomputes the
+  // manifest, so the hashes only need the right shape. `unlisted.js` exists but is not
+  // listed; `linked.js` is listed but absent unless a test creates it.
+  const mobileUiManifest = (appSize: number) => ({
+    version: "a".repeat(64),
+    files: [
+      { path: "_denext/client/app.js", sha256: "b".repeat(64), size: appSize },
+      { path: "index.html", sha256: "c".repeat(64), size: 13 },
+      { path: "linked.js", sha256: "d".repeat(64), size: 6 },
+    ],
+  });
+
+  const makeMobileUiExportDir = Effect.gen(function* () {
+    const fileSystem = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-mobile-ui-" });
+    const dir = path.join(root, "export");
+    yield* fileSystem.makeDirectory(path.join(dir, "_denext", "client"), { recursive: true });
+    yield* fileSystem.writeFileString(path.join(dir, "index.html"), "<html></html>");
+    yield* fileSystem.writeFileString(path.join(dir, "_denext", "client", "app.js"), "app()");
+    yield* fileSystem.writeFileString(path.join(dir, "_denext", "client", "app.js.gz"), "gz");
+    yield* fileSystem.writeFileString(path.join(dir, "unlisted.js"), "unlisted()");
+    yield* fileSystem.writeFileString(
+      path.join(dir, "_denext", "ota.json"),
+      encodeMobileUiManifestJson(mobileUiManifest(5)),
+    );
+    yield* fileSystem.writeFileString(path.join(root, "secret.txt"), "secret");
+    return { dir, root };
+  });
+
+  const fetchMobileUi = (pathname: string, authorization?: string) =>
+    Effect.gen(function* () {
+      const url = yield* getHttpServerUrl(pathname);
+      return yield* fetchEffect(
+        url,
+        authorization === undefined ? undefined : { headers: { authorization } },
+      );
+    });
+
+  it.effect("serves the mobile UI manifest file and its listed files", () =>
+    Effect.gen(function* () {
+      const { dir } = yield* makeMobileUiExportDir;
+      yield* buildAppUnderTest({ config: { mobileUiDir: dir } });
+      const authorization = `Bearer ${yield* getAuthenticatedBearerSessionToken()}`;
+
+      const response = yield* fetchMobileUi("/api/mobile/ui/_denext/ota.json", authorization);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers["cache-control"], "no-store");
+      assert.deepEqual(yield* responseJsonEffect<unknown>(response), mobileUiManifest(5));
+
+      const file = yield* fetchMobileUi("/api/mobile/ui/_denext/client/app.js", authorization);
+      assert.equal(file.status, 200);
+      assert.equal(file.headers["cache-control"], "no-store");
+      assert.match(file.headers["content-type"] ?? "", /javascript/);
+      assert.equal(yield* file.text, "app()");
+      const index = yield* fetchMobileUi("/api/mobile/ui/index.html", authorization);
+      assert.equal(index.status, 200);
+      assert.match(index.headers["content-type"] ?? "", /^text\/html/);
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("re-reads the mobile UI manifest when its mtime changes", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const { dir } = yield* makeMobileUiExportDir;
+      yield* buildAppUnderTest({ config: { mobileUiDir: dir } });
+      const authorization = `Bearer ${yield* getAuthenticatedBearerSessionToken()}`;
+      const readManifest = fetchMobileUi("/api/mobile/ui/_denext/ota.json", authorization).pipe(
+        Effect.flatMap(responseJsonEffect<unknown>),
+      );
+
+      assert.deepEqual(yield* readManifest, mobileUiManifest(5));
+      const manifestPath = path.join(dir, "_denext", "ota.json");
+      yield* fileSystem.writeFileString(
+        manifestPath,
+        encodeMobileUiManifestJson(mobileUiManifest(6)),
+      );
+      // Force a distinct mtime: two writes can land in the same timestamp tick.
+      const mtime = Option.getOrThrow((yield* fileSystem.stat(manifestPath)).mtime);
+      // Node takes numeric times in seconds.
+      const movedMtimeSeconds = mtime.getTime() / 1000 + 60;
+      yield* fileSystem.utimes(manifestPath, movedMtimeSeconds, movedMtimeSeconds);
+      assert.deepEqual(yield* readManifest, mobileUiManifest(6));
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("serves only files listed in the mobile UI manifest", () =>
+    Effect.gen(function* () {
+      const path = yield* Path.Path;
+      const { dir } = yield* makeMobileUiExportDir;
+      yield* buildAppUnderTest({ config: { mobileUiDir: dir } });
+      const authorization = `Bearer ${yield* getAuthenticatedBearerSessionToken()}`;
+
+      for (const pathname of [
+        "/api/mobile/ui/_denext/client/app.js.gz",
+        "/api/mobile/ui/unlisted.js",
+        "/api/mobile/ui/missing.js",
+        "/api/mobile/ui/_denext",
+        "/api/mobile/ui/..%2Fsecret.txt",
+        "/api/mobile/ui/_denext%2F..%2F..%2Fsecret.txt",
+        "/api/mobile/ui/%2E%2E%2Fsecret.txt",
+        "/api/mobile/ui/%2Fetc%2Fpasswd",
+        `/api/mobile/ui/${encodeURIComponent(path.join(dir, "index.html"))}`,
+        "/api/mobile/ui/%E0%A4%A",
+        "/api/mobile/ui/linked.js",
+      ]) {
+        const response = yield* fetchMobileUi(pathname, authorization);
+        assert.equal(response.status, 404, pathname);
+      }
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect.skipIf(!symlinksSupported)(
+    "refuses a listed mobile UI file that resolves outside the export",
+    () =>
+      Effect.gen(function* () {
+        const fileSystem = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const { dir, root } = yield* makeMobileUiExportDir;
+        yield* fileSystem.symlink(path.join(root, "secret.txt"), path.join(dir, "linked.js"));
+        yield* buildAppUnderTest({ config: { mobileUiDir: dir } });
+        const authorization = `Bearer ${yield* getAuthenticatedBearerSessionToken()}`;
+
+        const response = yield* fetchMobileUi("/api/mobile/ui/linked.js", authorization);
+        assert.equal(response.status, 404);
+      }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect("requires the environment's credentials for the mobile UI routes", () =>
+    Effect.gen(function* () {
+      const { dir } = yield* makeMobileUiExportDir;
+      yield* buildAppUnderTest({ config: { mobileUiDir: dir } });
+
+      const protectedRoute = yield* fetchMobileUi("/api/orchestration/threads/thread-1");
+      for (const pathname of ["/api/mobile/ui/_denext/ota.json", "/api/mobile/ui/index.html"]) {
+        for (const authorization of [undefined, "Bearer not-a-real-token"]) {
+          const response = yield* fetchMobileUi(pathname, authorization);
+          assert.equal(response.status, 401, pathname);
+          assert.equal(response.status, protectedRoute.status);
+        }
+      }
+    }).pipe(Effect.provide(NodeHttpServer.layerTest)),
+  );
+
+  it.effect.each(["unset", "without a manifest", "with a malformed manifest", "missing"] as const)(
+    "keeps the mobile UI routes off when T3CODE_MOBILE_UI_DIR is %s",
+    (setting) =>
+      Effect.gen(function* () {
+        const fileSystem = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const { dir, root } = yield* makeMobileUiExportDir;
+        const manifestPath = path.join(dir, "_denext", "ota.json");
+        if (setting === "without a manifest") yield* fileSystem.remove(manifestPath);
+        if (setting === "with a malformed manifest") {
+          yield* fileSystem.writeFileString(manifestPath, "{not json");
+        }
+        yield* buildAppUnderTest(
+          setting === "unset"
+            ? undefined
+            : { config: { mobileUiDir: setting === "missing" ? path.join(root, "nope") : dir } },
+        );
+        const authorization = `Bearer ${yield* getAuthenticatedBearerSessionToken()}`;
+        for (const pathname of [
+          "/api/mobile/ui/_denext/ota.json",
+          "/api/mobile/ui/_denext/client/app.js",
+        ]) {
+          const response = yield* fetchMobileUi(pathname, authorization);
+          assert.equal(response.status, 404, pathname);
+        }
       }).pipe(Effect.provide(NodeHttpServer.layerTest)),
   );
 
