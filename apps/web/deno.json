@@ -5,7 +5,7 @@
     "build": "deno run -A --node-modules-dir=none jsr:@denext/denext@2.6.0/cli build .",
     "export": "deno run -A --node-modules-dir=none jsr:@denext/denext@2.6.0/cli export .",
     "start": "deno run -A --node-modules-dir=none jsr:@denext/denext@2.6.0/cli start .",
-    "desktop": "deno task export && deno desktop --allow-net=127.0.0.1,localhost --allow-read --allow-env --node-modules-dir=none --exclude-unused-npm --include out --icon desktop-icon.png -o \"T3 Code\" desktop.ts"
+    "desktop": "deno task export && node ../../scripts/apply-web-brand-assets.ts production apps/web/out && deno desktop --allow-net=127.0.0.1,localhost --allow-read --allow-env --node-modules-dir=none --exclude-unused-npm --include out --icon desktop-icon.png -o \"T3 Code\" desktop.ts"
   },
   "nodeModulesDir": "manual",
   "unstable": ["sloppy-imports"],
