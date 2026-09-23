@@ -623,6 +623,25 @@ export function makeBrowserGitHubRoutingPermissions(
   });
 }
 
+/**
+ * A one-off read of the saved catalog outside the connection runtime, for the native shell's
+ * over-the-air UI check (../ota.ts). It goes through the same backend choice as the runtime
+ * (Keychain on iOS, IndexedDB elsewhere); no catalog yet reads as empty.
+ */
+export function readSavedConnectionCatalog(): Promise<ConnectionCatalogDocumentType> {
+  return Effect.runPromise(
+    Effect.scoped(
+      Effect.gen(function* () {
+        const database = yield* Effect.acquireRelease(openDatabase(), (database) =>
+          Effect.sync(() => database.close()),
+        );
+        const raw = yield* makeCatalogBackend(database).read;
+        return raw === null ? EMPTY_CONNECTION_CATALOG_DOCUMENT : yield* decodeCatalog(raw);
+      }),
+    ).pipe(Effect.withSpan("web.connectionStorage.readSavedConnectionCatalog")),
+  );
+}
+
 export const connectionStorageLayer = Layer.effectContext(
   Effect.gen(function* () {
     const database = yield* Effect.acquireRelease(openDatabase(), (database) =>

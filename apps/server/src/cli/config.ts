@@ -123,6 +123,11 @@ const EnvServerConfig = Config.all({
   host: Config.String("T3CODE_HOST").pipe(Config.option, Config.map(Option.getOrUndefined)),
   t3Home: Config.String("T3CODE_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
   devUrl: Config.URL("VITE_DEV_SERVER_URL").pipe(Config.option, Config.map(Option.getOrUndefined)),
+  mobileUiDir: Config.String("T3CODE_MOBILE_UI_DIR").pipe(
+    Config.option,
+    Config.map(Option.filter((dir) => dir.trim().length > 0)),
+    Config.map(Option.getOrUndefined),
+  ),
   devAllowedOrigins: Config.String("T3CODE_DEV_ALLOWED_ORIGINS").pipe(
     Config.withDefault(""),
     Config.map((value) =>
@@ -423,6 +428,7 @@ export const resolveServerConfig = (
       serverTracePath,
       host,
       staticDir,
+      ...(env.mobileUiDir === undefined ? {} : { mobileUiDir: env.mobileUiDir }),
       devUrl,
       ...(devAuthToken === undefined ? {} : { devAuthToken }),
       devAllowedOrigins: env.devAllowedOrigins,
