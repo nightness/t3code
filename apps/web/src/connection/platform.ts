@@ -53,6 +53,7 @@ import { clearComposerDraftsEnvironment } from "../composerDraftStore";
 import { isHostedStaticApp } from "../hostedPairing";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { nativeT3Plugin } from "../nativeShell";
+import { requestUiUpdateCheck } from "../ota";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { acknowledgeRpcRequest, trackRpcRequestSent } from "../rpc/requestLatencyState";
 import {
@@ -124,6 +125,9 @@ const wakeupsLayer = Wakeups.layer({
         Effect.sync(() =>
           subscribeApplicationActiveWakeups(document, (wakeup) => {
             Queue.offerUnsafe(queue, wakeup);
+            // A long background is also when the paired server may have moved on to a new
+            // UI; the native shell's OTA check piggybacks on it (../ota.ts).
+            if (wakeup === "application-active-reconnect") void requestUiUpdateCheck();
           }),
         ),
         (unsubscribe) => Effect.sync(unsubscribe),

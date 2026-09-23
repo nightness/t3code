@@ -9,7 +9,11 @@ import UIKit
 /// Registering here therefore adds T3Native's `window.Capacitor.Plugins.T3Native` stubs (also a
 /// document-start WKUserScript, via `JSExport.exportJS`) before the first navigation, so they
 /// exist before any web app script runs.
-class MainViewController: CAPBridgeViewController {
+///
+/// Its superclass `DenextBridgeViewController` (from `denext mobile add-ota`) adds denext's
+/// over-the-air UI: it picks the UI directory in `instanceDescriptor()` and registers the
+/// `DenextOta` plugin in `capacitorDidLoad()`, so this override calls `super` first.
+class MainViewController: DenextBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(T3NativePlugin())

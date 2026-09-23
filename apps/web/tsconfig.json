@@ -9,7 +9,9 @@
     "jsx": "react-jsx",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./src/*"],
+      // The denext export resolves this through deno.json; see src/denextMobileFallback.ts.
+      "denext/mobile": ["./src/denextMobileFallback.ts"]
     },
     "plugins": [
       {
