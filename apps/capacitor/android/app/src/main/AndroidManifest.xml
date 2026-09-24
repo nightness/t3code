@@ -28,6 +28,7 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+        <meta-data android:name="dev.denext.ota.PUBLIC_KEY" android:value="MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqR9zce/Xm+BsWgPMnXuAFw5URduGOysAc+iuGcSib2TNUNnpYQM1qdvMs2+O5ngMOPy/FLXEic5EZCKr59xm2w==" />
     </application>
 
     <!-- Permissions -->

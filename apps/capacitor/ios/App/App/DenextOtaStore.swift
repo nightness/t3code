@@ -54,6 +54,10 @@ final class DenextOtaStore {
         let size: Int
     }
 
+    /// The request `download` and `apply` take. Building one is the whole trust check, done
+    /// before anything is downloaded or any state changes: the file list must hash to the
+    /// manifest's `version` (code `integrity`), and `checkTrust` must accept the signature
+    /// or the transport (codes `signature` / `insecure`).
     struct ApplyRequest {
         let baseUrl: URL
         let headers: [String: String]
@@ -91,6 +95,17 @@ final class DenextOtaStore {
             guard seen.contains("index.html") else {
                 throw OtaError(code: "invalid", message: "The manifest has no index.html.")
             }
+            // The version is recomputed from the files, never trusted: files → version → signature.
+            guard DenextOtaStore.manifestVersion(files) == version else {
+                throw OtaError(code: "integrity", message: "The manifest version does not match its files.")
+            }
+            try DenextOtaStore.checkTrust(
+                baseUrl: baseUrl,
+                version: version,
+                required: (manifest["required"] as? Bool) ?? false,
+                notes: (manifest["notes"] as? String) ?? "",
+                signature: manifest["signature"] as? String
+            )
             self.baseUrl = baseUrl
             self.headers = headerFields
             self.version = version
@@ -168,6 +183,77 @@ final class DenextOtaStore {
 
     static func sha256Hex(_ data: Data) -> String {
         return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    // MARK: Trust
+
+    /// The Info.plist string key holding the OTA public key: base64 of the DER SubjectPublicKeyInfo
+    /// of an ECDSA P-256 key (`denext mobile add-ota --public-key`). Read from the app binary only.
+    static let publicKeyInfoKey = "DenextOtaPublicKey"
+    /// The hosts an unsigned UI may come from over plain http when no public key is embedded.
+    static let loopbackHosts: Set<String> = ["localhost", "127.0.0.1", "::1", "[::1]", "10.0.2.2"]
+
+    enum PublicKeyConfig {
+        case unset
+        case invalid
+        case key(P256.Signing.PublicKey)
+    }
+
+    /// The embedded public key. A value that is present but does not parse is `invalid`, which
+    /// refuses every manifest (fail closed) rather than falling back to unsigned updates.
+    static let publicKey: PublicKeyConfig = {
+        guard let text = (Bundle.main.object(forInfoDictionaryKey: DenextOtaStore.publicKeyInfoKey) as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            return .unset
+        }
+        guard let der = Data(base64Encoded: text),
+              let key = try? P256.Signing.PublicKey(derRepresentation: der) else {
+            return .invalid
+        }
+        return .key(key)
+    }()
+
+    /// The manifest version of `files`: SHA-256 over the `"<path>\t<sha256>\n"` lines sorted by
+    /// path in UTF-16 code-unit order, exactly as `otaManifestVersion` in denext computes it.
+    static func manifestVersion(_ files: [ManifestFile]) -> String {
+        let lines = files
+            .sorted { $0.path.utf16.lexicographicallyPrecedes($1.path.utf16) }
+            .map { "\($0.path)\t\($0.sha256)\n" }
+            .joined()
+        return sha256Hex(Data(lines.utf8))
+    }
+
+    /// The bytes a manifest signature covers (denext's `otaSignaturePayload`): the UTF-8 of
+    /// `"denext-ota-v1\n" + version + "\n" + ("1" | "0") + "\n" + sha256hex(notes)`.
+    static func signaturePayload(version: String, required: Bool, notes: String) -> Data {
+        let text = "denext-ota-v1\n\(version)\n\(required ? "1" : "0")\n\(sha256Hex(Data(notes.utf8)))"
+        return Data(text.utf8)
+    }
+
+    /// The download policy, checked before any file is fetched. With a public key embedded, the
+    /// manifest must carry a valid signature (code `signature`), whatever the transport. Without
+    /// one, only https, or plain http to a loopback host, is allowed (code `insecure`).
+    static func checkTrust(baseUrl: URL, version: String, required: Bool, notes: String, signature: String?) throws {
+        switch publicKey {
+        case .key(let key):
+            let payload = signaturePayload(version: version, required: required, notes: notes)
+            guard let signature = signature,
+                  let raw = Data(base64Encoded: signature),
+                  let ecdsa = try? P256.Signing.ECDSASignature(rawRepresentation: raw),
+                  key.isValidSignature(ecdsa, for: payload) else {
+                throw OtaError(code: "signature", message: "The manifest signature is missing or does not verify.")
+            }
+        case .invalid:
+            throw OtaError(code: "signature", message: "Info.plist \(publicKeyInfoKey) is not a base64 P-256 public key.")
+        case .unset:
+            let host = (baseUrl.host ?? "").lowercased()
+            guard baseUrl.scheme?.lowercased() == "https" || loopbackHosts.contains(host) else {
+                throw OtaError(
+                    code: "insecure",
+                    message: "Refusing an unsigned UI over plain http from \(host); use https or embed a public key."
+                )
+            }
+        }
     }
 
     /// `<directory>/_denext/ota.json` as a JSON object, if present and readable.
