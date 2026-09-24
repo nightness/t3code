@@ -13,6 +13,7 @@ import { DEV_PROXIED_PATH_PREFIXES } from "@t3tools/shared/devProxy";
 
 import { loadRepoEnv } from "../../scripts/lib/public-config";
 import { thirdPartyLicensesPlugin } from "../../scripts/lib/third-party-licenses";
+import { DENEXT_TEST_EXCLUDES, denextReactAliases } from "./vite/denextReact";
 import { tailwindPlugins } from "./vite/tailwind";
 
 const repoEnv = loadRepoEnv();
@@ -82,6 +83,23 @@ const unitTestProject = {
     hookTimeout: 15_000,
     testTimeout: 15_000,
     setupFiles: ["../../packages/shared/src/testing/longTempDir.ts"],
+  },
+} satisfies TestProjectInlineConfiguration;
+
+// Opt-in (`pnpm test:denext`): the same unit suite with React resolved to
+// denext's React-compat runtime, which is what the denext build of this app
+// ships. Only the React resolution differs from `unit`: the aliases cover
+// modules Vite transforms (app code), and the setup file redirects Node's own
+// resolution for the dependencies Vitest leaves external (base-ui, zustand,
+// tanstack, …), so the whole process runs on one React: denext's.
+const denextTestProject = {
+  extends: true,
+  resolve: { alias: denextReactAliases },
+  test: {
+    ...unitTestProject.test,
+    name: "denext",
+    exclude: DENEXT_TEST_EXCLUDES,
+    setupFiles: [...unitTestProject.test.setupFiles, "./test/denextReactRedirect.ts"],
   },
 } satisfies TestProjectInlineConfiguration;
 
@@ -284,7 +302,7 @@ export default defineConfig(() => {
       sourcemap: buildSourcemap,
     },
     test: {
-      projects: [defineProject(unitTestProject)],
+      projects: [defineProject(unitTestProject), defineProject(denextTestProject)],
     },
   };
 });

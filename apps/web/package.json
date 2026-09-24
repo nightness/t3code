@@ -9,7 +9,8 @@
     "build": "vp build",
     "preview": "vp preview",
     "typecheck": "tsc --noEmit",
-    "test": "vp test run --passWithNoTests --project unit"
+    "test": "vp test run --passWithNoTests --project unit",
+    "test:denext": "vp test run --passWithNoTests --project denext"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -59,6 +60,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@denext/denext": "npm:@jsr/denext__denext@2.8.2",
     "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@rolldown/plugin-babel": "^0.2.0",
