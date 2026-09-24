@@ -67,6 +67,9 @@
       // public/ + www/ hold the web build `cap sync` copies in.
       "entry": ["capacitor.config.ts!", "scripts/copy-web.mjs!"],
       "ignore": ["ios/**", "android/**", "www/**"],
+      // `cap sync` links native plugins into ios/ and android/; the web UI reaches them
+      // through window.Capacitor (denext/mobile), never an import.
+      "ignoreDependencies": ["@capacitor/app"],
     },
     "apps/mobile": {
       // Expo loads plugins by string; Metro embeds the browser entry in the native WebView.
