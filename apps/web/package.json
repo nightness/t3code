@@ -60,7 +60,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@denext/denext": "npm:@jsr/denext__denext@2.9.0",
+    "@denext/denext": "npm:@jsr/denext__denext@2.10.0-rc.1",
     "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@rolldown/plugin-babel": "^0.2.0",
