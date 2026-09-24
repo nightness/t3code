@@ -96,6 +96,8 @@ minimumReleaseAgeExclude:
   - "@distilled.cloud/stripe@1.0.0-rc.12"
   - "@shadcn/lint@0.1.5"
   - cn@0.3.2
+  # Freshly published JSR build of denext, used only by apps/web's opt-in `denext` test project.
+  - "@jsr/denext__denext@2.8.2"
 
 overrides:
   # Earlier React Navigation declarations create a circular type alias in TypeScript 7.
@@ -122,6 +124,11 @@ overrides:
   # database provider, which the relay never deploys. Its exact hono/valibot
   # pins are also the bulk of our open dependency advisories.
   "alchemy>@prisma/dev": "-"
+  # apps/web's `denext` test project only loads denext's React-compat runtime;
+  # its build-time Sass/MDX compilers are never reached, and sass would otherwise
+  # join vite-plus-core's optional peers and re-key most of the lockfile.
+  "@jsr/denext__denext>sass": "-"
+  "@jsr/denext__denext>@mdx-js/mdx": "-"
   "@clerk/backend": "catalog:"
   "@clerk/clerk-js": "catalog:"
   "@clerk/clerk-js>@base-org/account": "-"
