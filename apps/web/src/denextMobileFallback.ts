@@ -4,7 +4,8 @@
  * the Vite build (browser, Electron), vitest and knip resolve through node_modules, where denext
  * has no package. tsconfig.json maps the specifier here for them. Those builds never run inside
  * the native shell, so this is exactly what denext itself does there: nothing. Keep the
- * signatures in step with denext's `src/mobile/ota.ts` and `src/mobile/resume.ts`.
+ * signatures in step with denext's `src/mobile/ota.ts`, `src/mobile/resume.ts` and
+ * `src/mobile/deep-link.ts`.
  */
 
 type OtaPrepareResult =
@@ -43,3 +44,21 @@ export function otaBooted(): Promise<void> {
 export function onAppResume(_cb: (awayMs: number) => void): () => void {
   return () => {};
 }
+
+interface DeepLinkEvent {
+  readonly url: string;
+  readonly path?: string;
+  readonly launch: boolean;
+}
+
+interface DeepLinkOptions {
+  readonly accept?:
+    | ((url: URL) => boolean)
+    | { readonly schemes?: readonly string[]; readonly hosts?: readonly string[] };
+  readonly route?: boolean | ((path: string, url: URL) => void);
+}
+
+export function useDeepLink(
+  _callback: (event: DeepLinkEvent) => void,
+  _options?: DeepLinkOptions,
+): void {}

@@ -79,5 +79,16 @@
 	<true/>
 	<key>DenextOtaPublicKey</key>
 	<string>MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqR9zce/Xm+BsWgPMnXuAFw5URduGOysAc+iuGcSib2TNUNnpYQM1qdvMs2+O5ngMOPy/FLXEic5EZCKr59xm2w==</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>t3code</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

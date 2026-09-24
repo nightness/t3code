@@ -14,7 +14,7 @@ const source = NodePath.resolve(appDir, "../web/out");
 const target = NodePath.resolve(appDir, "www");
 const repoRoot = NodePath.resolve(appDir, "../..");
 // The same denext CLI apps/web/deno.json pins for its tasks.
-const DENEXT_CLI = "jsr:@denext/denext@2.9.0/cli";
+const DENEXT_CLI = "jsr:@denext/denext@2.10.0-rc.1/cli";
 
 if (!NodeFS.existsSync(NodePath.join(source, "index.html"))) {
   console.error(
@@ -63,9 +63,20 @@ NodeChildProcess.execFileSync(
 
 // After the branding, so the version covers exactly the files the app ships. The server's
 // export gets the same steps (README), so an unchanged UI is never downloaded again.
+// `--min-dep-age=0`: the pinned CLI can be younger than Deno's minimum dependency age (apps/web
+// scopes the same exemption to denext in deno.json; this run has no deno.json to read).
 NodeChildProcess.execFileSync(
   "deno",
-  ["run", "-A", "--node-modules-dir=none", DENEXT_CLI, "ota", "manifest", target],
+  [
+    "run",
+    "-A",
+    "--node-modules-dir=none",
+    "--min-dep-age=0",
+    DENEXT_CLI,
+    "ota",
+    "manifest",
+    target,
+  ],
   {
     stdio: "inherit",
   },
