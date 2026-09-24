@@ -77,5 +77,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>DenextOtaPublicKey</key>
+	<string>MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqR9zce/Xm+BsWgPMnXuAFw5URduGOysAc+iuGcSib2TNUNnpYQM1qdvMs2+O5ngMOPy/FLXEic5EZCKr59xm2w==</string>
 </dict>
 </plist>

@@ -75,6 +75,13 @@ T3's part:
   switched-on bearer environment at `<httpBaseUrl>/api/mobile/ui`.
 - **Bundle.** `pnpm web:copy` stamps `www/_denext/ota.json` after branding, so an unchanged
   export is never downloaded.
+- **Signing.** The app embeds an ECDSA P-256 public key (`DenextOtaPublicKey` in Info.plist,
+  `dev.denext.ota.PUBLIC_KEY` in AndroidManifest) and refuses any UI whose manifest is not signed
+  by the matching private key, so nobody on the network between the phone and the server can
+  swap the UI. The key is a release secret: make one with `denext ota keygen <file>`, embed the
+  public half with `denext mobile add-ota --force --public-key <file>.pub`, and keep the private
+  half out of the repo (a CI secret; locally e.g. `~/.config/t3code/ota-signing.key`). The key
+  committed here is a development key; production builds embed T3's own.
 
 **Prepare the server's export.** Stamp it after branding, exactly as `web:copy` does:
 
@@ -82,7 +89,8 @@ T3's part:
 cd apps/web && deno task export
 # The script resolves its target against the repo root, whatever the working directory.
 node ../../scripts/apply-web-brand-assets.ts production apps/web/out
-deno run -A --node-modules-dir=none <denext CLI> ota manifest out   # see DENEXT_CLI in scripts/copy-web.mjs
+deno run -A --node-modules-dir=none <denext CLI> ota manifest out --sign ~/.config/t3code/ota-signing.key
+# see DENEXT_CLI in scripts/copy-web.mjs; in CI, DENEXT_OTA_SIGNING_KEY (the PEM) replaces --sign
 T3CODE_MOBILE_UI_DIR="$PWD/out" t3 serve --host 0.0.0.0
 ```
 

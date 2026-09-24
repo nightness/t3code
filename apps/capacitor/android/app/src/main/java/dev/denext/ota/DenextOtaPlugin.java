@@ -37,8 +37,9 @@ import org.json.JSONObject;
  *   <li>{@code status() → { current, bundled, pending, rejected, staged }}
  *   <li>{@code download({ baseUrl, headers, manifest }) → { version, downloaded, copied }}:
  *       downloads and verifies the version and records it as staged, WITHOUT switching to it;
- *       rejects with code {@code invalid}, {@code busy}, {@code rejected}, {@code download} or
- *       {@code integrity}
+ *       rejects with code {@code invalid}, {@code busy}, {@code rejected}, {@code download},
+ *       {@code integrity}, {@code signature} or {@code insecure} (the last two, and a version that
+ *       does not match the files, before any download: see {@link DenextOtaStore#checkTrust})
  *   <li>{@code activate({ version }) → { version }}: switches to the staged version (its trial
  *       launch); rejects with code {@code invalid}, {@code busy}, {@code not_staged} or
  *       {@code rejected}
@@ -99,7 +100,7 @@ public class DenextOtaPlugin extends Plugin {
     public void download(PluginCall call) {
         final DenextOtaStore.ApplyRequest request;
         try {
-            request = parseApplyRequest(call);
+            request = parseApplyRequest(call, store());
         } catch (DenextOtaStore.OtaException ex) {
             call.reject(ex.getMessage(), ex.code);
             return;
@@ -162,7 +163,7 @@ public class DenextOtaPlugin extends Plugin {
     public void apply(PluginCall call) {
         final DenextOtaStore.ApplyRequest request;
         try {
-            request = parseApplyRequest(call);
+            request = parseApplyRequest(call, store());
         } catch (DenextOtaStore.OtaException ex) {
             call.reject(ex.getMessage(), ex.code);
             return;
@@ -317,7 +318,14 @@ public class DenextOtaPlugin extends Plugin {
         return value == null ? JSONObject.NULL : value;
     }
 
-    private static DenextOtaStore.ApplyRequest parseApplyRequest(PluginCall call) throws DenextOtaStore.OtaException {
+    /**
+     * The request download and apply take. Building one is the whole trust check, done before
+     * anything is downloaded or any state changes: the file list must hash to the manifest's
+     * version (code integrity), and {@link DenextOtaStore#checkTrust} must accept the signature or
+     * the transport (codes signature / insecure).
+     */
+    private static DenextOtaStore.ApplyRequest parseApplyRequest(PluginCall call, DenextOtaStore store)
+        throws DenextOtaStore.OtaException {
         String baseUrl = call.getString("baseUrl");
         Uri base = baseUrl == null ? null : Uri.parse(baseUrl);
         if (
@@ -373,6 +381,19 @@ public class DenextOtaPlugin extends Plugin {
         if (!seen.contains("index.html")) {
             throw new DenextOtaStore.OtaException("invalid", "The manifest has no index.html.");
         }
+        // The version is recomputed from the files, never trusted: files → version → signature.
+        if (!DenextOtaStore.manifestVersion(files).equals(version)) {
+            throw new DenextOtaStore.OtaException("integrity", "The manifest version does not match its files.");
+        }
+        Object notes = manifest.opt("notes");
+        Object signature = manifest.opt("signature");
+        store.checkTrust(
+            base,
+            version,
+            Boolean.TRUE.equals(manifest.opt("required")),
+            notes instanceof String ? (String) notes : "",
+            signature instanceof String ? (String) signature : null
+        );
         return new DenextOtaStore.ApplyRequest(baseUrl, headers, version, files);
     }
 }

@@ -12,7 +12,9 @@ import Foundation
 /// - `status() → { current, bundled, pending, rejected, staged }`
 /// - `download({ baseUrl, headers, manifest }) → { version, downloaded, copied }`: downloads and
 ///   verifies the version and records it as staged, WITHOUT switching to it; rejects with code
-///   `invalid`, `busy`, `rejected`, `download` or `integrity`
+///   `invalid`, `busy`, `rejected`, `download`, `integrity`, `signature` or `insecure`
+///   (the last two, and a version that does not match the files, before any download: see
+///   `DenextOtaStore.checkTrust`)
 /// - `activate({ version }) → { version }`: switches to the staged version (its trial launch);
 ///   rejects with code `invalid`, `busy`, `not_staged` or `rejected`
 /// - `apply({ baseUrl, headers, manifest }) → { version, downloaded, copied }`: `download` then
