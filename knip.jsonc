@@ -57,6 +57,9 @@
       // named subcomponents even before they have callers; the file audit still
       // reports an entire component module when nothing imports it.
       "ignoreIssues": { "src/components/ui/*.tsx": ["exports", "nsExports", "duplicates"] },
+      // The opt-in `denext` test project aliases React to files inside this package by
+      // path (vite/denextReact.ts), not by importing it.
+      "ignoreDependencies": ["@denext/denext"],
     },
     "apps/capacitor": {
       // The Capacitor CLI reads capacitor.config.ts by filename, and the sync script
