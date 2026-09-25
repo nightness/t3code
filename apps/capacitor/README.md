@@ -22,8 +22,7 @@ This is separate from `apps/mobile`, the Expo / React Native client.
 
    `pnpm web:copy` (run by every `sync*` script) recreates `www/` from `../web/out`,
    skipping the precompressed `*.gz` siblings (~13 MB the webview never requests). The
-   app serves `www/` at the origin root (iOS `capacitor://localhost`, Android
-   `https://localhost`), so the export's root-absolute `/_denext/client/...` asset paths
+   app serves `www/` at the origin root (iOS `t3code://app`, Android `https://app`), so the export's root-absolute `/_denext/client/...` asset paths
    resolve unchanged.
 
 3. **iOS.** `pnpm open:ios` opens Xcode, where you pick your team and run on a device.
@@ -112,8 +111,11 @@ denext's docs, [Push and Auth sessions](https://denext.dev/docs/desktop)). T3's 
 - **Sign-in** (`apps/web/src/components/clerk/capacitorClerkBridge.ts`). Clerk runs as in the
   Electron app (`@clerk/electron/react`: native mode, no cookies), with the client token in the
   Keychain and OAuth in the system sign-in sheet (`openAuthSession`), redirecting to the
-  desktop app's `t3code://app/`. The Clerk instance must accept requests from the
-  `capacitor://localhost` origin (its allowed origins).
+  desktop app's `t3code://app/`. On iOS the page itself runs at `t3code://app` (`server.iosScheme`
+  - `hostname` in `capacitor.config.ts`), the Electron app's origin, which the production Clerk
+    instance already accepts; at the default `capacitor://localhost` Clerk refuses every request
+    (`origin_invalid`). Verified on an iPhone: Clerk loads and keeps its client token. Android runs
+    at `https://app` (its scheme must be http/https), which the instance would have to allow.
 - **Notifications** (`apps/web/src/cloud/nativePushRegistration.ts`). After sign-in the app asks
   for permission, gets the APNs token and registers the device with the relay
   (`POST /v1/mobile/devices`, relay client `t3-mobile`); sign-out unregisters it. A tap opens

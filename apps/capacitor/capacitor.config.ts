@@ -3,15 +3,21 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 // The web UI is apps/web's denext static export, copied into www/ by
-// scripts/copy-web.mjs. The default schemes are kept (iOS capacitor://localhost,
-// Android https://localhost) so the root-absolute /_denext/client/... asset paths
-// resolve against webDir. The app reaches the T3 server over plain http/ws on the
+// scripts/copy-web.mjs. iOS serves it from t3code://app, the Electron app's own
+// origin, which T3's production Clerk instance already accepts (it refuses
+// capacitor://localhost with origin_invalid); Android serves https://app (its
+// scheme must be http/https). Root-absolute /_denext/client/... asset paths resolve
+// against webDir either way. The app reaches the T3 server over plain http/ws on the
 // LAN, hence mixed content on Android (cleartext is also enabled in the manifest,
 // and ATS is relaxed in the iOS Info.plist).
 const config: CapacitorConfig = {
   appId: "com.brainwires.t3code",
   appName: "T3 Code",
   webDir: "www",
+  server: {
+    iosScheme: "t3code",
+    hostname: "app",
+  },
   android: {
     allowMixedContent: true,
   },
