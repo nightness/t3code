@@ -52,6 +52,7 @@ export const DENEXT_TEST_EXCLUDES: string[] = [
   "src/components/ChatMarkdown.test.tsx",
   "src/components/cloud/CloudEnvironmentConnectList.test.tsx",
   "src/components/device/DeviceStreamView.test.tsx",
+  "src/components/device/useDeviceControls.test.tsx",
   "src/components/diffs/DiffFileTree.test.tsx",
   "src/components/diffs/StyledDiffCodeView.test.tsx",
   "src/components/files/AttachmentFilePreview.test.tsx",
