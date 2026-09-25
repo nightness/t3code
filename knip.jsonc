@@ -69,7 +69,11 @@
       "ignore": ["ios/**", "android/**", "www/**"],
       // `cap sync` links native plugins into ios/ and android/; the web UI reaches them
       // through window.Capacitor (denext/mobile), never an import.
-      "ignoreDependencies": ["@capacitor/app"],
+      "ignoreDependencies": [
+        "@capacitor/app",
+        "@capacitor/device",
+        "@capacitor/push-notifications",
+      ],
     },
     "apps/mobile": {
       // Expo loads plugins by string; Metro embeds the browser entry in the native WebView.

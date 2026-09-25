@@ -5,7 +5,7 @@ import { ElectronBrowserHost } from "./browser/ElectronBrowserHost";
 import { PreviewAutomationHosts } from "./components/preview/PreviewAutomationHosts";
 import { QuitHoldOverlay } from "./components/QuitHoldOverlay";
 import { UiUpdateDialogHost } from "./components/UiUpdateDialogHost";
-import { useNativeDeepLinks } from "./deepLinks";
+import { useNativeDeepLinks, useNativePushTaps } from "./deepLinks";
 import { onUiFirstRender } from "./ota";
 import { AppAtomRegistryProvider } from "./rpc/atomRegistry";
 import type { AppRouter } from "./router";
@@ -21,8 +21,9 @@ export function AppRoot({ router }: { readonly router: AppRouter }) {
   useEffect(() => {
     onUiFirstRender();
   }, []);
-  // `t3code://` links in the native shell (./deepLinks.ts).
+  // `t3code://` links and notification taps in the native shell (./deepLinks.ts).
   useNativeDeepLinks(router);
+  useNativePushTaps(router);
 
   return (
     <AppAtomRegistryProvider>

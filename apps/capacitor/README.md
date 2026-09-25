@@ -97,6 +97,36 @@ T3CODE_MOBILE_UI_DIR="$PWD/out" t3 serve --host 0.0.0.0
 Over LAN `http`, the SHA-256 checks catch corruption but not a man-in-the-middle; use TLS end
 to end (for example Tailscale HTTPS) where that matters.
 
+## T3 Connect sign-in and agent notifications
+
+With T3 Connect configured, the shell signs in to the same Clerk account as the React Native
+app and registers for the relay's agent notifications. denext does the native work
+(`denext mobile add push`, `add auth-session --scheme t3code` and `add device`; see
+denext's docs, [Push and Auth sessions](https://denext.dev/docs/desktop)). T3's part:
+
+- **Config.** The export reads the public T3 Connect config the way the Vite build does
+  (`loadRepoEnv` in `scripts/lib/public-config.ts`): `T3CODE_CLERK_PUBLISHABLE_KEY`,
+  `T3CODE_CLERK_JWT_TEMPLATE` and `T3CODE_RELAY_URL` from the process env, `.env.local` or
+  `.env` at the repo root. `cp .env.example .env` before `deno task export` gives the
+  production values. Without them the app has no cloud features and pairs over the LAN only.
+- **Sign-in** (`apps/web/src/components/clerk/capacitorClerkBridge.ts`). Clerk runs as in the
+  Electron app (`@clerk/electron/react`: native mode, no cookies), with the client token in the
+  Keychain and OAuth in the system sign-in sheet (`openAuthSession`), redirecting to the
+  desktop app's `t3code://app/`. The Clerk instance must accept requests from the
+  `capacitor://localhost` origin (its allowed origins).
+- **Notifications** (`apps/web/src/cloud/nativePushRegistration.ts`). After sign-in the app asks
+  for permission, gets the APNs token and registers the device with the relay
+  (`POST /v1/mobile/devices`, relay client `t3-mobile`); sign-out unregisters it. A tap opens
+  the thread in the payload's `deepLink` (`apps/web/src/deepLinks.ts`).
+- **APNs environment.** Debug builds are development-signed (`aps-environment: development` in
+  `ios/App/App/App.entitlements`) and register as `sandbox`; an archive exported for
+  TestFlight or the App Store is re-signed with `production` and registers as `production`.
+  The page tells them apart by `window.Capacitor.DEBUG`, which `ios/debug.xcconfig` turns on
+  for the Debug configuration only, so a Release build run from Xcode with development
+  signing would register the wrong environment.
+- **Relay.** The relay sends with its own APNs key to the topic `com.brainwires.t3code`, so
+  that key must belong to the team that owns this bundle id.
+
 ## Cleartext and local-network notes
 
 The app is served from a secure origin but talks to an `http://` / `ws://` server, so both

@@ -22,6 +22,7 @@
 		237C09F3377B554D1E245F17 /* DenextBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 987CADDB3742CAEEFB425922 /* DenextBridgeViewController.swift */; };
 		7BE536C81F050BA5D8F4718C /* DenextOtaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F90EF5959C8F6059C9EA82F /* DenextOtaPlugin.swift */; };
 		417F3571CD1476AA3365A396 /* DenextOtaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548FBC0C99339BEF2B557D04 /* DenextOtaStore.swift */; };
+		2E483FCA9B625F9AD3819066 /* DenextAuthSessionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A141596B405F97AB074B7464 /* DenextAuthSessionPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 		987CADDB3742CAEEFB425922 /* DenextBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DenextBridgeViewController.swift; sourceTree = "<group>"; };
 		0F90EF5959C8F6059C9EA82F /* DenextOtaPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DenextOtaPlugin.swift; sourceTree = "<group>"; };
 		548FBC0C99339BEF2B557D04 /* DenextOtaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DenextOtaStore.swift; sourceTree = "<group>"; };
+		A141596B405F97AB074B7464 /* DenextAuthSessionPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DenextAuthSessionPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 				987CADDB3742CAEEFB425922 /* DenextBridgeViewController.swift */,
 				0F90EF5959C8F6059C9EA82F /* DenextOtaPlugin.swift */,
 				548FBC0C99339BEF2B557D04 /* DenextOtaStore.swift */,
+				A141596B405F97AB074B7464 /* DenextAuthSessionPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -184,6 +187,7 @@
 				237C09F3377B554D1E245F17 /* DenextBridgeViewController.swift in Sources */,
 				7BE536C81F050BA5D8F4718C /* DenextOtaPlugin.swift in Sources */,
 				417F3571CD1476AA3365A396 /* DenextOtaStore.swift in Sources */,
+				2E483FCA9B625F9AD3819066 /* DenextAuthSessionPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -323,6 +327,7 @@
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
@@ -345,6 +350,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;

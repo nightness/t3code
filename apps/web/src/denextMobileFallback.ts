@@ -4,8 +4,9 @@
  * the Vite build (browser, Electron), vitest and knip resolve through node_modules, where denext
  * has no package. tsconfig.json maps the specifier here for them. Those builds never run inside
  * the native shell, so this is exactly what denext itself does there: nothing. Keep the
- * signatures in step with denext's `src/mobile/ota.ts`, `src/mobile/resume.ts` and
- * `src/mobile/deep-link.ts`.
+ * signatures in step with denext's `src/mobile/ota.ts`, `src/mobile/resume.ts`,
+ * `src/mobile/deep-link.ts`, `src/mobile/push.ts`, `src/mobile/auth-session.ts`,
+ * `src/mobile/device.ts` and `src/mobile/bridge.ts`.
  */
 
 type OtaPrepareResult =
@@ -62,3 +63,64 @@ export function useDeepLink(
   _callback: (event: DeepLinkEvent) => void,
   _options?: DeepLinkOptions,
 ): void {}
+
+type PushPermission = "granted" | "denied" | "prompt" | "unsupported";
+
+interface PushRegistration {
+  readonly platform: "ios" | "android";
+  readonly token: string;
+}
+
+interface PushNotification {
+  readonly id?: string;
+  readonly title?: string;
+  readonly body?: string;
+  readonly data: Readonly<Record<string, unknown>>;
+}
+
+interface PushTap {
+  readonly notification: PushNotification;
+  readonly actionId: string;
+  readonly inputValue?: string;
+}
+
+interface PushTapOptions {
+  readonly accept?: DeepLinkOptions["accept"];
+  readonly route?: DeepLinkOptions["route"];
+}
+
+export function requestPushPermission(): Promise<PushPermission> {
+  return Promise.resolve("unsupported");
+}
+
+export function registerForPush(_options?: { timeoutMs?: number }): Promise<PushRegistration> {
+  return Promise.reject(new Error("registerForPush: needs the iOS/Android shell."));
+}
+
+export function usePushTapped(_callback: (tap: PushTap) => void, _options?: PushTapOptions): void {}
+
+type AuthSessionErrorCode = "cancelled" | "busy" | "invalid" | "unsupported" | "timeout";
+
+export function openAuthSession(
+  _url: string,
+  _options: { callbackScheme: string; preferEphemeral?: boolean; timeoutMs?: number },
+): Promise<{ readonly url: string }> {
+  const error = new Error("openAuthSession: needs the iOS/Android shell.") as Error & {
+    code: AuthSessionErrorCode;
+  };
+  error.code = "unsupported";
+  return Promise.reject(error);
+}
+
+export function deviceInfo(): Promise<{
+  readonly platform: "ios" | "android" | "web";
+  readonly model?: string;
+  readonly osVersion?: string;
+  readonly isVirtual?: boolean;
+}> {
+  return Promise.resolve({ platform: "web" });
+}
+
+export function runtimePlatform(): "ios" | "android" | "desktop" | "web" {
+  return "web";
+}

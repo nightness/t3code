@@ -1,4 +1,4 @@
-import { useDeepLink } from "denext/mobile";
+import { useDeepLink, usePushTapped } from "denext/mobile";
 
 import { isNativeShell } from "./nativeShell";
 import type { AppRouter } from "./router";
@@ -8,6 +8,10 @@ import type { AppRouter } from "./router";
  * (`useDeepLink` from `denext/mobile`, over `@capacitor/app`); this module only maps the one link
  * the React Native app answers in production onto the web UI's routes:
  * `t3code://threads/<environmentId>/<threadId>` opens that thread (`/<environmentId>/<threadId>`).
+ *
+ * Notification taps land on the same routes: the relay's APNs payload carries the thread's
+ * in-app path as `deepLink` (`/threads/<environmentId>/<threadId>`, built by
+ * `buildAgentAwarenessDeepLink` in packages/shared), mapped here through `deepLinkHref`.
  *
  * Pairing links (`t3code://pair?pairingUrl=…`) are deliberately ignored: the hosted pairing
  * route submits its token on load, so a link any app or page can craft would pair an
@@ -64,4 +68,28 @@ export function useNativeDeepLinks(router: AppRouter): void {
       if (href !== null) void router.navigate({ href });
     },
   });
+}
+
+/**
+ * The web UI href a tapped notification opens, or null to ignore it: the relay puts the thread's
+ * in-app path in the payload's `deepLink` key, next to `aps`, `environmentId` and `threadId`.
+ */
+export function pushTapHref(data: Readonly<Record<string, unknown>>): string | null {
+  return typeof data.deepLink === "string" ? deepLinkHref(data.deepLink) : null;
+}
+
+/**
+ * Opens the thread behind a tapped agent notification, including the tap that launched the
+ * app. denext's own routing is off (`route: false`): the payload has no `path` / `url` for it,
+ * and the thread route is this app's to map. Outside the native shell denext never calls back.
+ */
+export function useNativePushTaps(router: AppRouter): void {
+  usePushTapped(
+    ({ notification }) => {
+      if (!isNativeShell()) return;
+      const href = pushTapHref(notification.data);
+      if (href !== null) void router.navigate({ href });
+    },
+    { route: false },
+  );
 }

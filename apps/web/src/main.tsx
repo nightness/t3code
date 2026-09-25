@@ -1,11 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createHashHistory, createBrowserHistory } from "@tanstack/react-router";
+import { runtimePlatform } from "denext/mobile";
 
 import "./index.css";
 
 import { isElectron } from "./env";
 import { hasCloudPublicConfig } from "./cloud/publicConfig";
+import { selectManagedAuthShell } from "./components/clerk/managedAuthShellKind";
+import { isNativeShell } from "./nativeShell";
 import { getRouter } from "./router";
 import {
   syncDocumentElectronPlatformClasses,
@@ -43,13 +46,25 @@ const app = <AppRoot router={router} />;
 // Managed auth is cloud-only, and the Electron Clerk provider bundles the full
 // clerk-js runtime. Loading only the selected runtime as a split chunk keeps
 // every Clerk byte out of the startup graph for local-mode users, and keeps
-// the bundled clerk-js out of the browser build entirely.
-const managedAuthShellModule =
+// the bundled clerk-js out of the browser build entirely. The Capacitor shell
+// runs Clerk the way Electron does, with sign-in in the system browser sheet;
+// the denext desktop build gets none (./components/clerk/managedAuthShellKind.ts).
+const managedAuthShellKind =
   clerkPublishableKey && hasCloudPublicConfig()
-    ? isElectron
-      ? import("./components/clerk/ElectronManagedAuthShell")
-      : import("./components/clerk/BrowserManagedAuthShell")
+    ? selectManagedAuthShell({
+        isElectron,
+        isNativeShell: isNativeShell(),
+        platform: runtimePlatform(),
+      })
     : null;
+const managedAuthShellModule =
+  managedAuthShellKind === "electron"
+    ? import("./components/clerk/ElectronManagedAuthShell")
+    : managedAuthShellKind === "capacitor"
+      ? import("./components/clerk/CapacitorManagedAuthShell")
+      : managedAuthShellKind === "browser"
+        ? import("./components/clerk/BrowserManagedAuthShell")
+        : null;
 
 // The index.html boot splash lives inside #root, and React's first commit
 // clears it. Resolve everything that first commit needs, the selected

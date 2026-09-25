@@ -53,6 +53,56 @@ export function nativeT3Plugin(): NativeT3Plugin | undefined {
   return typeof plugin === "object" && plugin !== null ? plugin : undefined;
 }
 
+/** A string store for the native shell's small secrets (the Clerk client token, the device id). */
+export interface NativeSecretStore {
+  readonly get: (key: string) => Promise<string | null>;
+  readonly set: (key: string, value: string) => Promise<void>;
+  readonly remove: (key: string) => Promise<void>;
+}
+
+const localStorageSecretStore: NativeSecretStore = {
+  get: async (key) => {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set: async (key, value) => {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // Storage off: the value lasts until the app closes at most.
+    }
+  },
+  remove: async (key) => {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Nothing stored.
+    }
+  },
+};
+
+/**
+ * The iOS Keychain through the T3Native plugin (one generic-password item per key), else
+ * `localStorage` for a shell without the plugin (the Android shell today). A Keychain failure
+ * rejects; a missing item reads as null.
+ */
+export function nativeSecretStore(): NativeSecretStore {
+  const { keychainGet, keychainSet, keychainRemove } = nativeT3Plugin() ?? {};
+  if (!keychainGet || !keychainSet || !keychainRemove) return localStorageSecretStore;
+  return {
+    get: async (key) => (await keychainGet({ key }))?.value ?? null,
+    set: async (key, value) => {
+      await keychainSet({ key, value });
+    },
+    remove: async (key) => {
+      await keychainRemove({ key });
+    },
+  };
+}
+
 const EXTERNAL_URL_PROTOCOLS: ReadonlySet<string> = new Set(["http:", "https:", "mailto:", "tel:"]);
 
 /**
