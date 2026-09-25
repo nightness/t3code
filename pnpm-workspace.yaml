@@ -97,7 +97,7 @@ minimumReleaseAgeExclude:
   - "@shadcn/lint@0.1.5"
   - cn@0.3.2
   # Freshly published JSR build of denext, used only by apps/web's opt-in `denext` test project.
-  - "@jsr/denext__denext@2.10.0-rc.1"
+  - "@jsr/denext__denext@2.10.0-rc.3"
 
 overrides:
   # Earlier React Navigation declarations create a circular type alias in TypeScript 7.

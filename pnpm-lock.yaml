@@ -738,8 +738,8 @@ importers:
         version: 5.0.14(@types/react@19.2.16)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
     devDependencies:
       '@denext/denext':
-        specifier: npm:@jsr/denext__denext@2.10.0-rc.1
-        version: '@jsr/denext__denext@2.10.0-rc.1(bufferutil@4.1.0)(utf-8-validate@6.0.6)'
+        specifier: npm:@jsr/denext__denext@2.10.0-rc.3
+        version: '@jsr/denext__denext@2.10.0-rc.3(bufferutil@4.1.0)(utf-8-validate@6.0.6)'
       '@effect/platform-node':
         specifier: 4.0.0-rc.115
         version: 4.0.0-rc.115(bufferutil@4.1.0)(effect@4.0.0-rc.115(patch_hash=0dfc4bb8ebd80fb3e06b91ef61346f5259517ab0f2437644fe95ae531084b1f5))(redis@6.2.1)(utf-8-validate@6.0.6)
@@ -3408,8 +3408,8 @@ packages:
   '@jsr/denext__avif@0.1.2':
     resolution: {integrity: sha512-UkcenZowo945fbl3+vM7nH0Bfe/+Aa0BnZWgLcZVQxkxKia4v7cFHMxY9/QjPhbBEje1TbbDhPM+tzkET261Jg==, tarball: https://npm.jsr.io/~/11/@jsr/denext__avif/0.1.2.tgz}
 
-  '@jsr/denext__denext@2.10.0-rc.1':
-    resolution: {integrity: sha512-f1enwsUurZcQ8RwskJkS7beH7HfBsDWhcGjuY9aQfrIz+uTHH9neTPdMMW8czJ7TwzSlkzWTe8coP6CceVJ+Vg==, tarball: https://npm.jsr.io/~/11/@jsr/denext__denext/2.10.0-rc.1.tgz}
+  '@jsr/denext__denext@2.10.0-rc.3':
+    resolution: {integrity: sha512-a4cZQpqysP4XzEwl2XBg/JzAn2vHvQAMIjqJMbZLOjgK6ptL3XffaTBEAnmwymsCirTZUqrz39OkAHFkWy9l3w==, tarball: https://npm.jsr.io/~/11/@jsr/denext__denext/2.10.0-rc.3.tgz}
 
   '@jsr/denext__lightningcss@1.0.0-rc.72':
     resolution: {integrity: sha512-4Os5WxYs5oJrfSKd2PXDlzAQF1yFxLw6WMAUAyJTLIvccEL3cVBfJUhWOyoG6bpsZEQebGqUQerCi6164K93mw==, tarball: https://npm.jsr.io/~/11/@jsr/denext__lightningcss/1.0.0-rc.72.tgz}
@@ -14324,7 +14324,7 @@ snapshots:
 
   '@jsr/denext__avif@0.1.2': {}
 
-  '@jsr/denext__denext@2.10.0-rc.1(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
+  '@jsr/denext__denext@2.10.0-rc.3(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
     dependencies:
       '@jsr/astral__astral': 0.5.6
       '@jsr/denext__avif': 0.1.2
