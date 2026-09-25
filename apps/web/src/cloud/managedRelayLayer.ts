@@ -1,10 +1,11 @@
 import { ManagedRelay } from "@t3tools/client-runtime/relay";
-import { RelayWebClientId } from "@t3tools/contracts/relay";
+import { RelayMobileClientId, RelayWebClientId } from "@t3tools/contracts/relay";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Semaphore from "effect/Semaphore";
 
+import { isNativeShell } from "../nativeShell";
 import {
   createBrowserDpopProof,
   generateBrowserDpopKey,
@@ -76,7 +77,10 @@ const relayDpopSignerLayer = Layer.effect(
   }),
 );
 
+// The native shell is a mobile client: only `t3-mobile` may request the relay's
+// `mobile:registration` scope, which push registration needs (./nativePushRegistration.ts).
 export const managedRelayClientLayer = (relayUrl: string) =>
-  ManagedRelay.layer({ relayUrl, clientId: RelayWebClientId }).pipe(
-    Layer.provideMerge(relayDpopSignerLayer),
-  );
+  ManagedRelay.layer({
+    relayUrl,
+    clientId: isNativeShell() ? RelayMobileClientId : RelayWebClientId,
+  }).pipe(Layer.provideMerge(relayDpopSignerLayer));

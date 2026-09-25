@@ -12,6 +12,7 @@ import { environmentCatalog } from "../connection/catalog";
 import { runtime } from "../lib/runtime";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { useAtomCommand } from "../state/use-atom-command";
+import { registerNativePushDevice, unregisterNativePushDevice } from "./nativePushRegistration";
 import { resolveRelayClerkTokenOptions } from "./publicConfig";
 
 export function deactivateManagedRelayAuthentication(): void {
@@ -52,6 +53,8 @@ export function ManagedRelayAuthProvider({ children }: { readonly children: Reac
     const queueAccountCleanup = () => {
       const previousTransition = accountTransitionRef.current ?? Promise.resolve();
       accountTransitionRef.current = previousTransition.then(async () => {
+        // The Capacitor shell's relay device registration goes with the account.
+        const unregistration = unregisterNativePushDevice();
         const results = await Promise.all([
           removeRelayEnvironments(),
           settleAsyncResult(() =>
@@ -62,6 +65,7 @@ export function ManagedRelayAuthProvider({ children }: { readonly children: Reac
             ),
           ),
         ]);
+        await unregistration;
         for (const result of results) {
           reportAtomCommandResult(result, { label: "cloud account cleanup" });
         }
@@ -79,6 +83,7 @@ export function ManagedRelayAuthProvider({ children }: { readonly children: Reac
       const activateSession = () => {
         if (!cancelled) {
           activateManagedRelayAuthentication(userId, tokenProvider);
+          void registerNativePushDevice(userId, tokenProvider);
         }
       };
       const activateAfterTransition = (transition: Promise<void>) => {
