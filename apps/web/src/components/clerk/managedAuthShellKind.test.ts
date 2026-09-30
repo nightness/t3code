@@ -11,7 +11,11 @@ describe("selectManagedAuthShell", () => {
       { isElectron: false, isNativeShell: true, platform: "android" },
       "capacitor",
     ],
-    ["denext desktop", { isElectron: false, isNativeShell: false, platform: "desktop" }, null],
+    [
+      "denext desktop (as a browser)",
+      { isElectron: false, isNativeShell: false, platform: "desktop" },
+      "browser",
+    ],
     ["a browser", { isElectron: false, isNativeShell: false, platform: "web" }, "browser"],
   ] as const)("picks the shell for %s", (_label, runtime, shell) => {
     expect(selectManagedAuthShell(runtime)).toBe(shell);

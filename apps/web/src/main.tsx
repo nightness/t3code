@@ -50,8 +50,8 @@ const app = <AppRoot router={router} />;
 // clerk-js runtime. Loading only the selected runtime as a split chunk keeps
 // every Clerk byte out of the startup graph for local-mode users, and keeps
 // the bundled clerk-js out of the browser build entirely. The Capacitor shell
-// runs Clerk the way Electron does, with sign-in in the system browser sheet;
-// the denext desktop build gets none (./components/clerk/managedAuthShellKind.ts).
+// runs Clerk the way Electron does, with sign-in in the system browser sheet
+// (./components/clerk/managedAuthShellKind.ts).
 const managedAuthShellKind =
   clerkPublishableKey && hasCloudPublicConfig()
     ? selectManagedAuthShell({
