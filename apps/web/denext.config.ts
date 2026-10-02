@@ -40,4 +40,35 @@ export default {
     // The designer's macOS master (dark appearance) instead of the auto-detected web touch icon.
     desktop: { icon: "../../assets/prod/black-macos-1024.png" },
   },
+  // The Deno Desktop build (`deno task desktop`, `deno task desktop:package`), at parity with the
+  // Electron app (apps/desktop): the same `t3code://app` origin Clerk already accepts, and
+  // `window.desktopBridge` from a preload instead of Electron's (./desktop/preload.ts).
+  desktop: {
+    app: {
+      name: "T3 Code",
+      // Distinct from the Electron app (com.t3tools.t3code): it keys this build's storage,
+      // keychain service and window origin storage.
+      identifier: "com.brainwires.t3code.desktop",
+      origin: "t3code://app",
+      // OAuth callbacks (Clerk), the Codex sign-in handoff, provider-auth returns and thread links.
+      deepLinks: ["t3code"],
+      singleInstance: true,
+    },
+    preload: "./desktop/preload.ts",
+    window: { width: 1280, height: 820, title: "T3 Code" },
+    titleBar: "hiddenInset",
+    minSize: { width: 840, height: 620 },
+    installers: { macos: ["dmg"], linux: ["tar.gz", "deb"], windows: ["msi"] },
+    capabilities: {
+      secureStore: true,
+      authSession: true,
+      notifications: true,
+      // Clerk's relying party (clerk.t3.codes), as @clerk/electron/passkeys sees it.
+      passkeys: { rpIds: ["clerk.t3.codes"] },
+      contextMenu: true,
+      dialogs: true,
+      // Electron's `openExternal` allow-list (apps/desktop ElectronShell: http and https only).
+      shell: { openExternal: ["https:", "http:"] },
+    },
+  },
 } satisfies DenextConfig;

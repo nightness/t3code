@@ -3,7 +3,28 @@
 // window (run `deno task export` first, or `deno task desktop`).
 // Backend reverse proxy: set `spa.proxy` in denext.config.ts (e.g. to reach a
 // local server same-origin so its session cookies persist).
-import { runDesktop } from "denext/desktop";
+// Native capabilities come from `desktop.capabilities` in the config (default deny).
+import { resolveDesktopCapabilities, runDesktop } from "denext/desktop";
 import config from "./denext.config.ts";
 
-await runDesktop({ importMetaUrl: import.meta.url, proxy: config.spa?.proxy });
+/**
+ * The runtime's WebSocket relay (`ws://127.0.0.1:<port>`, a new port each launch), read by the
+ * preload's synchronous `getLocalEnvironmentBootstraps()` (./desktop/preload.ts): WebSockets
+ * cannot use the `t3code://` scheme, and denext does not hand the relay's address to the page.
+ * Not a secret: the relay admits only the app origin.
+ */
+const DESKTOP_ENV_PATH = "/_t3/desktop-env.js";
+
+function desktopEnvScript(): Response {
+  const env = { wsOrigin: Deno.env.get("DENO_DESKTOP_WS_ORIGIN") ?? null };
+  return new Response(`globalThis.__t3DesktopEnv=${JSON.stringify(env)};`, {
+    headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" },
+  });
+}
+
+await runDesktop({
+  importMetaUrl: import.meta.url,
+  proxy: config.spa?.proxy,
+  onRequest: (_request, url) => (url.pathname === DESKTOP_ENV_PATH ? desktopEnvScript() : null),
+  ...(await resolveDesktopCapabilities(config, { base: import.meta.url })),
+});

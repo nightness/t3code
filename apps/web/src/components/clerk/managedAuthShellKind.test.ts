@@ -12,7 +12,12 @@ describe("selectManagedAuthShell", () => {
       "capacitor",
     ],
     [
-      "denext desktop (as a browser)",
+      "denext desktop (its preload sets desktopBridge)",
+      { isElectron: true, isNativeShell: false, platform: "desktop" },
+      "electron",
+    ],
+    [
+      "denext desktop without the preload (as a browser)",
       { isElectron: false, isNativeShell: false, platform: "desktop" },
       "browser",
     ],

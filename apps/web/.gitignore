@@ -3,3 +3,5 @@
 out/
 src/index.gen.css
 desktop-icon.png
+.deno-desktop/
+dist/
