@@ -75,6 +75,12 @@ async function buildApp(out: string, target?: string): Promise<void> {
     // Baked least-privilege flags mean an unbaked permission should fail fast, not block on a
     // prompt the packaged GUI has no TTY to answer.
     "--no-prompt",
+    // T3 (local edit, re-apply after --regenerate-scripts): apps/web sits in a pnpm workspace
+    // with a manual node_modules. Without this, deno desktop type-checks against that
+    // node_modules (no @types/node there) and rewrites the root package.json from
+    // pnpm-workspace.yaml; the migrate-era `desktop` task passed the same two flags.
+    "--node-modules-dir=none",
+    "--exclude-unused-npm",
     ...(await desktopPackageFlags(import.meta.url, "darwin")),
     "--include",
     "out",

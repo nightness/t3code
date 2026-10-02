@@ -3,11 +3,11 @@
   "tasks": {
     "dev": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts dev .",
     "build": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts build .",
-    "export": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts export .",
+    "export": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts export . && node ../../scripts/apply-web-brand-assets.ts production apps/web/out",
     "start": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts start .",
-    "desktop": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts desktop run .",
+    "desktop": "deno task export && deno run -A scripts/package-macos.ts --no-export && open \"dist/T3 Code.app\"",
     "desktop:scripts": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts desktop package --regenerate-scripts .",
-    "desktop:package": "deno task export && node ../../scripts/apply-web-brand-assets.ts production apps/web/out && deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts desktop package ."
+    "desktop:package": "deno run -A --node-modules-dir=none file:///Users/nightness/Source/Brainwires/denext/cli.ts desktop package ."
   },
   "nodeModulesDir": "manual",
   "minimumDependencyAge": {
@@ -38,6 +38,29 @@
     "denext/desktop/window": "file:///Users/nightness/Source/Brainwires/denext/src/desktop/window.ts",
     "denext/desktop/app": "file:///Users/nightness/Source/Brainwires/denext/src/desktop/app.ts",
     "denext/mobile": "file:///Users/nightness/Source/Brainwires/denext/src/mobile/mod.ts",
-    "~/": "./src/"
+    "~/": "./src/",
+    "@std/http": "jsr:@std/http@^1.0.0",
+    "@std/path": "jsr:@std/path@^1.0.0",
+    "@std/fs": "jsr:@std/fs@^1.0.0",
+    "@std/media-types": "jsr:@std/media-types@^1.0.0",
+    "@std/async": "jsr:@std/async@^1.0.0",
+    "@std/encoding": "jsr:@std/encoding@^1.0.0",
+    "@std/jsonc": "jsr:@std/jsonc@^1.0.0",
+    "@std/yaml": "jsr:@std/yaml@^1.0.0",
+    "ws": "npm:ws@^8"
+  },
+  "compile": {
+    "include": [".deno-desktop/app.json"]
+  },
+  "desktop": {
+    "app": {
+      "name": "T3 Code",
+      "identifier": "com.brainwires.t3code.desktop",
+      "icons": {
+        "macos": "./desktop-icon.png",
+        "linux": "./desktop-icon.png"
+      },
+      "deepLinks": ["t3code"]
+    }
   }
 }
