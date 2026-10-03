@@ -55,6 +55,10 @@ export default {
       singleInstance: true,
     },
     preload: "./desktop/preload.ts",
+    // apps/web sits in a pnpm workspace with a manual node_modules: without these, `deno desktop`
+    // type-checks against that node_modules (no @types/node there) and rewrites the root
+    // package.json from pnpm-workspace.yaml.
+    denoFlags: ["--node-modules-dir=none", "--exclude-unused-npm"],
     window: { width: 1280, height: 820, title: "T3 Code" },
     titleBar: "hiddenInset",
     minSize: { width: 840, height: 620 },

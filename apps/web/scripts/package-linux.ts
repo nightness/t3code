@@ -23,7 +23,9 @@
  *              format whose tool is missing is skipped with a warning; one you asked for fails.
  * --appimage   add an AppImage to whatever --format / the config asks for
  *
- *   DENEXT_APP_NAME  output base name (default: the deno.json `desktop.app.name`).
+ *   DENEXT_APP_NAME  output base name (default: `desktop.app.name` in denext.config.ts, else
+ *                    deno.json's). The bundle's name, identifier and icon come from
+ *                    denext.config.ts `desktop.app` (`icons.linux`, a PNG), else deno.json.
  *   deno.json `version` is the package version; denext.config.ts `desktop.installers`
  *   `publisher` / `description` fill the package metadata.
  *
@@ -43,10 +45,13 @@ import {
   buildDesktopBundle,
   buildDesktopDeb,
   buildDesktopRpm,
+  buildDesktopTarball,
   desktopPackageArches,
   type DesktopPackageMeta,
   desktopRequireTool,
   desktopRun as run,
+  desktopToolGate,
+  desktopVersionProblem,
   parseDesktopPackageArgs,
   prepareDesktopPackage,
 } from "denext/desktop";
@@ -69,11 +74,10 @@ async function buildBundle(name: string, arch: "x86_64" | "arm64"): Promise<stri
   });
 }
 
-/** tar.gz a bundle directory for distribution. */
+/** tar.gz a bundle directory for distribution (written by denext: modes kept on any host). */
 async function tarball(name: string, arch: "x86_64" | "arm64", dir: string): Promise<string> {
   const tgz = `dist/${name}-${LABELS[arch]}-linux.tar.gz`;
-  await run(["tar", "czf", tgz, "-C", "dist", dir.replace(/^dist\//, "")]);
-  return tgz;
+  return await buildDesktopTarball({ bundleDir: dir, out: tgz });
 }
 
 /** Build an AppImage for a bundle with appimagetool; returns its path. */
@@ -105,10 +109,19 @@ async function installers(
   const out: string[] = [];
   const base = `dist/${name}-${LABELS[arch]}`;
   const pkg = { meta, bundleDir: dir, exe: `${name}-${LABELS[arch]}`, arch };
+  // A version Debian / RPM can't express skips a default .deb with a warning (an asked-for one fails).
+  const versionOk = (format: "deb" | "rpm") =>
+    desktopToolGate(desktopVersionProblem(format, meta.version), `.${format}`, plan.explicit);
   for (const format of plan.formats) {
     if (format === "tar.gz") out.push(await tarball(name, arch, dir));
-    if (format === "deb") out.push(await buildDesktopDeb({ ...pkg, out: `${base}.deb` }));
-    if (format === "rpm" && (await desktopRequireTool("rpmbuild", ".rpm", plan.explicit))) {
+    if (format === "deb" && versionOk("deb")) {
+      out.push(await buildDesktopDeb({ ...pkg, out: `${base}.deb` }));
+    }
+    if (
+      format === "rpm" &&
+      versionOk("rpm") &&
+      (await desktopRequireTool("rpmbuild", ".rpm", plan.explicit))
+    ) {
       out.push(await buildDesktopRpm({ ...pkg, out: `${base}.rpm` }));
     }
     if (
