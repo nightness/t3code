@@ -24,6 +24,7 @@ import type {
 import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
 import { setBadge } from "denext/desktop/app";
 import { installClerkDesktopBridge } from "denext/desktop/clerk";
+import { desktopOs, desktopWebSocketUrl, desktopWsUrl } from "denext/desktop/client";
 import {
   focusWindow,
   getWindowState,
@@ -43,11 +44,6 @@ import {
 import pkg from "../package.json" with { type: "json" };
 import { deepLinkHref } from "../src/deepLinks.ts";
 
-declare global {
-  // deno-lint-ignore no-var
-  var __t3DesktopEnv: { readonly wsOrigin: string | null } | undefined;
-}
-
 const PRIMARY_LOCAL_ENVIRONMENT_ID = "primary";
 /** The keychain entries (the keychain service is the app identifier). */
 const BEARER_KEY = "t3.local-environment-bearer";
@@ -59,27 +55,26 @@ const CLIENT_SETTINGS_KEY = "t3code:client-settings:v1";
 // `t3code://app/` callback, and native passkeys (`@clerk/electron/passkeys` reads them).
 installClerkDesktopBridge({ passkeys: true });
 
-// The WebSocket relay's address is per launch and the page has no way to read it, so
-// desktop.ts serves it as a script; a parser-inserted script runs before the page's own.
-document.write('<script src="/_t3/desktop-env.js"></script>');
-
 const platform = (() => {
-  const os = (globalThis as { __denext?: { os?: string } }).__denext?.os;
+  const os = desktopOs();
   return os === "windows" ? "win32" : os === "darwin" || os === "linux" ? os : "linux";
 })();
 
 // --- The local (primary) environment: served through the app origin ---------------------------
 
 function primaryBootstrap(): DesktopEnvironmentBootstrap {
-  const wsOrigin = globalThis.__t3DesktopEnv?.wsOrigin ?? null;
+  // WebSockets go through the runtime's loopback relay, whose URL (with its per-launch token)
+  // denext injects before this preload runs. The socket path is part of the base: the client
+  // appends `/ws` only to a root base, and the relay's base is `/.deno-desktop-relay/<token>`.
+  const hasRelay = desktopWsUrl() !== undefined;
   return {
     id: PRIMARY_LOCAL_ENVIRONMENT_ID,
     label: "Local",
     runningDistro: null,
     // HTTP rides the app origin: `spa.proxy` forwards /api, /oauth, /.well-known to the server.
     httpBaseUrl: `${location.origin}/`,
-    // WebSockets go through the runtime's loopback relay, which reaches the same proxy (/ws).
-    wsBaseUrl: wsOrigin === null ? null : `${wsOrigin}/`,
+    // The relay reaches the same proxy (/ws).
+    wsBaseUrl: hasRelay ? desktopWebSocketUrl("/ws") : null,
   };
 }
 
