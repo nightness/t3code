@@ -34,6 +34,8 @@ vi.mock("react", async (importOriginal) => ({
   useState: <A,>(initial: A) => [initial, () => {}],
 }));
 vi.mock("../../hooks/useCopyToClipboard", () => ({ writeTextToClipboard: vi.fn() }));
+// The touch long-press stand-in for contextmenu (useEffect/useMemo underneath); the menu is opened directly here.
+vi.mock("../../hooks/useLongPress", () => ({ useLongPress: () => ({}) }));
 vi.mock("../../localApi", () => ({
   readLocalApi: () => ({ contextMenu: { show: state.showMenu } }),
 }));
