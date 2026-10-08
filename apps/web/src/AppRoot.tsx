@@ -2,7 +2,6 @@ import { RouterProvider } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { ElectronBrowserHost } from "./browser/ElectronBrowserHost";
-import { PreviewAutomationHosts } from "./components/preview/PreviewAutomationHosts";
 import { QuitHoldOverlay } from "./components/QuitHoldOverlay";
 import { UiUpdateDialogHost } from "./components/UiUpdateDialogHost";
 import { useNativeDeepLinks, useNativePushTaps } from "./deepLinks";
@@ -28,7 +27,6 @@ export function AppRoot({ router }: { readonly router: AppRouter }) {
   return (
     <AppAtomRegistryProvider>
       <RouterProvider router={router} />
-      <PreviewAutomationHosts />
       <ElectronBrowserHost />
       <QuitHoldOverlay />
       <UiUpdateDialogHost />

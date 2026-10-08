@@ -9,14 +9,14 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
-import { HttpClient, HttpClientRequest, HttpRouter } from "effect/unstable/http";
+import { HttpClient, HttpClientRequest, HttpRouter } from "effect/http";
 
 import { AuthOrchestrationReadScope, AuthSessionId } from "@t3tools/contracts";
 import { symlinksSupported } from "@t3tools/shared/testing/symlinks";
 
 import * as EnvironmentAuth from "./auth/EnvironmentAuth.ts";
 import * as ServerConfig from "./config.ts";
-import { mobileUiRouteLayer } from "./http.ts";
+import { layerMobileUiRoute } from "./http.ts";
 
 const encodeMobileUiManifestJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 
@@ -79,7 +79,7 @@ const serveMobileUi = Effect.fn("MobileUiTest.serve")(function* (mobileUiDir: st
   const config = yield* ServerConfig.ServerConfig;
   const fileSystem = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const appLayer = mobileUiRouteLayer.pipe(
+  const appLayer = layerMobileUiRoute.pipe(
     Layer.provideMerge(ServerConfig.layer({ ...config, mobileUiDir })),
     Layer.provideMerge(environmentAuthLayer),
     Layer.provideMerge(NodeHttpPlatform.layer),

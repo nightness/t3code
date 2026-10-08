@@ -14,7 +14,7 @@ import {
   type BrowserDpopKey,
 } from "./dpop";
 
-const relayDpopSignerLayer = Layer.effect(
+const layerRelayDpopSigner = Layer.effect(
   ManagedRelay.ManagedRelayDpopSigner,
   Effect.gen(function* () {
     const crypto = yield* Crypto.Crypto;
@@ -79,8 +79,8 @@ const relayDpopSignerLayer = Layer.effect(
 
 // The native shell is a mobile client: only `t3-mobile` may request the relay's
 // `mobile:registration` scope, which push registration needs (./nativePushRegistration.ts).
-export const managedRelayClientLayer = (relayUrl: string) =>
+export const layer = (relayUrl: string) =>
   ManagedRelay.layer({
     relayUrl,
     clientId: isNativeShell() ? RelayMobileClientId : RelayWebClientId,
-  }).pipe(Layer.provideMerge(relayDpopSignerLayer));
+  }).pipe(Layer.provideMerge(layerRelayDpopSigner));
