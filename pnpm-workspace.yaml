@@ -165,7 +165,7 @@ minimumReleaseAgeExclude:
   - "@opencode/protocol@2.0.23"
   - "@opencode/schema@2.0.23"
   # Freshly published JSR build of denext, used only by apps/web's opt-in `denext` test project.
-  - "@jsr/denext__denext@3.0.1"
+  - "@jsr/denext__denext@3.3.0"
 
 overrides:
   # Keep jsdom's optional peer consistent so Vite+ has one test-runner instance.
