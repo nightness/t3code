@@ -157,11 +157,11 @@ bar (prev/next/done) when it loads.
 
 `assets/icon.png` is an opaque 1024×1024 square composited from the production Icon
 Composer source (`assets/prod/app-icon.icon`: black fill plus `text.svg` at scale 8.5).
-Regenerate the native icons and splash screens with:
+It is `mobile.icon` in `denext.config.ts`, with the background and splash colours. Regenerate
+the native icons and splash screens with:
 
 ```sh
-npx @capacitor/assets generate --iconBackgroundColor '#0a0a0a' --iconBackgroundColorDark '#0a0a0a' \
-  --splashBackgroundColor '#0a0a0a' --splashBackgroundColorDark '#0a0a0a'
+deno run -A --node-modules-dir=none jsr:@denext/denext@3.3.0/cli mobile assets --platform ios
 ```
 
-The tool also writes PWA icons to `icons/`. They are not used here, so delete them.
+Drop `--platform ios` to write the Android launcher icons and splashes too.
