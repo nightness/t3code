@@ -52,6 +52,7 @@ overrides:
   alchemy>@prisma/dev: '-'
   '@jsr/denext__denext>sass': '-'
   '@jsr/denext__denext>@mdx-js/mdx': '-'
+  '@jsr/denext__denext>@tanstack/router-plugin': '-'
   '@clerk/backend': 3.18.1
   '@clerk/clerk-js': 6.32.1
   '@clerk/clerk-js>@base-org/account': '-'
@@ -830,8 +831,8 @@ importers:
         version: 5.0.14(@types/react@19.3.0)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
     devDependencies:
       '@denext/denext':
-        specifier: npm:@jsr/denext__denext@3.3.0
-        version: '@jsr/denext__denext@3.3.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)'
+        specifier: npm:@jsr/denext__denext@^3.4.0
+        version: '@jsr/denext__denext@3.4.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)'
       '@effect/platform-node':
         specifier: 4.0.1
         version: 4.0.1(bufferutil@4.1.0)(effect@4.0.1(patch_hash=a33cba07c41f32374c2aaa86ea4a84d3ab9a872a78c94b65e929b19f8361856f))(redis@6.2.1)(utf-8-validate@6.0.6)
@@ -1504,6 +1505,10 @@ packages:
 
   '@babel/generator@7.29.7':
     resolution: {integrity: sha512-DkXD5OJQaAQIdZ1bt3UZdEnHAn9Imd3IVBdX03UFe+ony9Ojw5pzr9YVKGDY1jt+Gcn/FnGkNf8r+Vj5NOJWtQ==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/generator@7.29.8':
+    resolution: {integrity: sha512-gZbepsdh3WDtgZKWL+vTPh71LSBrm/Y4/QDZBVCcYfmeTEEuoOYwlSy+G1StfJg+/Zy550u/3TATbm7qDbbMtg==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-annotate-as-pure@7.29.7':
@@ -3682,8 +3687,8 @@ packages:
   '@jsr/denext__avif@0.1.2':
     resolution: {integrity: sha512-UkcenZowo945fbl3+vM7nH0Bfe/+Aa0BnZWgLcZVQxkxKia4v7cFHMxY9/QjPhbBEje1TbbDhPM+tzkET261Jg==, tarball: https://npm.jsr.io/~/11/@jsr/denext__avif/0.1.2.tgz}
 
-  '@jsr/denext__denext@3.3.0':
-    resolution: {integrity: sha512-UgPsyfIB3dgUC0qGX+LI5Qlpqvqm5sd2zGd8jI22i2FYA0smsKLrtHfEVrfysVxpJWRAM5VCNfrgdTR02DLJlA==, tarball: https://npm.jsr.io/~/11/@jsr/denext__denext/3.3.0.tgz}
+  '@jsr/denext__denext@3.4.0':
+    resolution: {integrity: sha512-9E0e6+8cmW37Lym/MK0mrux8zx1NOBXPhaBXrxKdjIsNG+x2axdKV8qHBCFpO8d4dmpXwTXOpQ0fEkGzuaYA8w==, tarball: https://npm.jsr.io/~/11/@jsr/denext__denext/3.4.0.tgz}
 
   '@jsr/denext__lightningcss@1.0.0-rc.72':
     resolution: {integrity: sha512-4Os5WxYs5oJrfSKd2PXDlzAQF1yFxLw6WMAUAyJTLIvccEL3cVBfJUhWOyoG6bpsZEQebGqUQerCi6164K93mw==, tarball: https://npm.jsr.io/~/11/@jsr/denext__lightningcss/1.0.0-rc.72.tgz}
@@ -12494,7 +12499,7 @@ snapshots:
   '@babel/core@7.29.7':
     dependencies:
       '@babel/code-frame': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@babel/helper-compilation-targets': 7.29.7
       '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
       '@babel/helpers': 7.29.7
@@ -12512,6 +12517,14 @@ snapshots:
       - supports-color
 
   '@babel/generator@7.29.7':
+    dependencies:
+      '@babel/parser': 7.29.8
+      '@babel/types': 7.29.8
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
+      jsesc: 3.1.0
+
+  '@babel/generator@7.29.8':
     dependencies:
       '@babel/parser': 7.29.8
       '@babel/types': 7.29.8
@@ -12957,7 +12970,7 @@ snapshots:
   '@babel/traverse@7.29.7':
     dependencies:
       '@babel/code-frame': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@babel/helper-globals': 7.29.7
       '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
@@ -14328,7 +14341,7 @@ snapshots:
       2g: 0.4.4(typescript@7.0.2)
       '@babel/code-frame': 7.29.7
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@expo/config': 58.0.1(typescript@7.0.2)
       '@expo/env': 2.5.1
       '@expo/json-file': 11.2.1
@@ -14854,7 +14867,7 @@ snapshots:
 
   '@jsr/denext__avif@0.1.2': {}
 
-  '@jsr/denext__denext@3.3.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
+  '@jsr/denext__denext@3.4.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)':
     dependencies:
       '@jsr/astral__astral': 0.5.6
       '@jsr/denext__avif': 0.1.2
@@ -20724,7 +20737,7 @@ snapshots:
   metro-transform-plugins@0.87.1:
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@babel/template': 7.29.7
       '@babel/traverse': 7.29.7
       flow-enums-runtime: 0.0.6
@@ -20735,7 +20748,7 @@ snapshots:
   metro-transform-worker@0.87.1(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@babel/parser': 7.29.8
       '@babel/types': 7.29.8
       flow-enums-runtime: 0.0.6
@@ -20756,7 +20769,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
       '@babel/traverse': 7.29.7
