@@ -18,6 +18,7 @@ export default {
   // graph loads (FileDiff, CodeView and the file tree's renderer, used only by lazy routes).
   // Importing each name from its defining module keeps those modules in the lazy chunks.
   optimizePackageImports: ["@pierre/diffs", "@pierre/trees", "@base-ui/react"],
+  tailwind: { input: "./src/index.css", output: "./src/index.gen.css" },
   spa: {
     entry: "./src/bootstrap.ts",
     // vite.config's `tanstackRouter({ autoCodeSplitting: true })`: each route's components are
