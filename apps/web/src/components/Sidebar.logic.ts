@@ -46,6 +46,18 @@ export function shouldNavigateAfterThreadPark(input: {
 const THREAD_SELECTION_SAFE_SELECTOR = "[data-thread-item], [data-thread-selection-safe]";
 export const THREAD_JUMP_HINT_SHOW_DELAY_MS = 200;
 
+/**
+ * Hover timing for the sidebar's thread details cards. A card opens only when
+ * the pointer rests on a row, so sweeping across the list on the way to
+ * somewhere else never pops one: Base UI's default open delay, and no warm-up
+ * window (`timeout: 0`) in which the next row's card would open instantly.
+ */
+export const SIDEBAR_THREAD_HOVER_CARD_TIMING = {
+  delay: 600,
+  closeDelay: 0,
+  timeout: 0,
+} as const;
+
 export function resolveSidebarRowAccessibility(input: {
   readonly title: string;
   readonly statusLabel: string | null;
