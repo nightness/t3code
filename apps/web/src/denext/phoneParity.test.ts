@@ -1,4 +1,4 @@
-// @effect-diagnostics nodeBuiltinImport:off - reads phone-parity.css to check its scoping.
+// @effect-diagnostics nodeBuiltinImport:off - reads phone-parity.css and denext.config.ts as text.
 import * as NodeFS from "node:fs";
 import * as NodeURL from "node:url";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -7,6 +7,11 @@ import { DEFAULT_SANS_FONT_STACK } from "../appearanceFonts";
 
 const css = NodeFS.readFileSync(
   NodeURL.fileURLToPath(new URL("./phone-parity.css", import.meta.url)),
+  "utf8",
+);
+
+const config = NodeFS.readFileSync(
+  NodeURL.fileURLToPath(new URL("../../denext.config.ts", import.meta.url)),
   "utf8",
 );
 
@@ -67,7 +72,13 @@ describe("phone parity", () => {
   it("puts DM Sans first in the phone exports' --font-sans, over the web stack", () => {
     const rule = /html\[data-phone-parity\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
     expect(rule).toContain(`--font-sans: "DM Sans", ${DEFAULT_SANS_FONT_STACK};`);
-    // The boot shell's inline body rule spells the web stack; the phone body takes the token.
-    expect(css).toMatch(/html\[data-phone-parity\] body\s*\{\s*font-family: var\(--font-sans\);/);
+  });
+
+  it("lets body text follow --font-sans through the boot shell's inline style", () => {
+    // spa.head's boot style is linked after index.css (denext 3.4), so its body rule must read
+    // the token, not spell the web stack, or it outranks index.css and DM Sans never reaches body.
+    // The head is one string literal, its line breaks spelled `\n`.
+    const bodyRule = /\\n\s*body \{([^}]*)\}/.exec(config)?.[1] ?? "";
+    expect(bodyRule).toContain(`font-family: var(--font-sans, ${DEFAULT_SANS_FONT_STACK});`);
   });
 });

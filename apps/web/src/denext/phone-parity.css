@@ -18,12 +18,6 @@ html[data-phone-parity] {
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
-/* The boot shell's inline style (denext.config.ts spa.head) spells the web
-   stack on body after index.css, so body takes the token here. */
-html[data-phone-parity] body {
-  font-family: var(--font-sans);
-}
-
 /* Message body: MOBILE_TYPOGRAPHY.body, 16/23 (src/lib/typography.ts and
    resolveMarkdownFontSizes in src/lib/appearancePreferences.ts), drawn in the
    full foreground colour (--color-md-body). rem, so the interface size still
