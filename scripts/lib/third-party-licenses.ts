@@ -478,7 +478,16 @@ async function resolveDependencyPackage(
       if (found) return found;
     } catch (error) {
       const code = isRecord(error) && typeof error.code === "string" ? error.code : null;
-      if (code !== "MODULE_NOT_FOUND" && code !== "ERR_PACKAGE_PATH_NOT_EXPORTED") throw error;
+      // Deno's `require.resolve` reports an `exports` pattern that maps to a missing file
+      // (`stream-json/package.json` → `./src/package.json`) as ENOENT, where Node says
+      // MODULE_NOT_FOUND; the denext build runs this module under Deno.
+      if (
+        code !== "MODULE_NOT_FOUND" &&
+        code !== "ERR_PACKAGE_PATH_NOT_EXPORTED" &&
+        code !== "ENOENT"
+      ) {
+        throw error;
+      }
     }
   }
 

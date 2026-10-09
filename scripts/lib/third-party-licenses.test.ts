@@ -5,7 +5,29 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
+// Deno's `require.resolve` (the denext build runs the generator under Deno) reports an
+// `exports` target that is missing on disk as ENOENT, where Node reports MODULE_NOT_FOUND.
+// Reproduce that for one fixture package name; every other request resolves as usual.
+vi.mock("node:module", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:module")>();
+  const createRequire: typeof actual.createRequire = (path) => {
+    const require = actual.createRequire(path);
+    const nodeResolve = require.resolve;
+    const resolve = ((request: string, options?: { paths?: string[] }) => {
+      if (request.startsWith("deno-enoent-dependency")) {
+        throw Object.assign(new Error("No such file or directory (os error 2)"), {
+          code: "ENOENT",
+        });
+      }
+      return nodeResolve(request, options);
+    }) as NodeJS.RequireResolve;
+    resolve.paths = nodeResolve.paths;
+    return Object.assign(require, { resolve });
+  };
+  return { ...actual, createRequire };
+});
 
 import {
   generateThirdPartyLicenseManifest,
@@ -200,6 +222,30 @@ describe("third-party license generation", () => {
     });
 
     expect(manifest.entries.some((entry) => entry.name === "demo-dependency")).toBe(true);
+  });
+
+  it("finds packages whose resolution fails with ENOENT, as under Deno", async () => {
+    const fixture = await createFixture();
+    const dependencyRoot = NodePath.join(fixture.root, "node_modules", "deno-enoent-dependency");
+    await writeJson(fixture.appManifest, {
+      name: "fixture-app",
+      dependencies: { "deno-enoent-dependency": "2.0.0" },
+    });
+    await writeJson(NodePath.join(dependencyRoot, "package.json"), {
+      name: "deno-enoent-dependency",
+      version: "2.0.0",
+      license: "MIT",
+      exports: { "./*": "./src/*" },
+      repository: "example/deno-enoent-dependency",
+    });
+    await NodeFSP.writeFile(NodePath.join(dependencyRoot, "LICENSE"), "MIT text\n", "utf8");
+
+    const manifest = await generateThirdPartyLicenseManifest({
+      configFile: fixture.configFile,
+      packageManifests: [{ bundle: "web", path: fixture.appManifest }],
+    });
+
+    expect(manifest.entries.some((entry) => entry.name === "deno-enoent-dependency")).toBe(true);
   });
 
   it("includes custom notices selected by the dev server bundle", async () => {
