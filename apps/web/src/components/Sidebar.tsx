@@ -2427,6 +2427,7 @@ export default function Sidebar() {
     unpinThread,
     confirmAndUnpinThread,
     setThreadAutoSettle,
+    setThreadMuted,
     reorderPinnedThread,
     reorderActiveThread,
     markThreadUnread,
@@ -4668,6 +4669,8 @@ export default function Sidebar() {
         const supportsTitleRegeneration =
           serverConfigs.get(thread.environmentId)?.environment.capabilities
             .threadTitleRegeneration === true;
+        const supportsMute =
+          serverConfigs.get(thread.environmentId)?.environment.capabilities.threadMute === true;
         const isRegeneratingTitle = thread.titleRegeneration != null;
         const isSettled = settledThreadKeysRef.current.has(threadKey);
         const isSnoozed = snoozedThreadKeysRef.current.has(threadKey);
@@ -4708,6 +4711,7 @@ export default function Sidebar() {
                 isPinned,
                 isSettled,
                 autoSettleEnabled: thread.autoSettleDisabledAt == null,
+                isMuted: thread.mutedAt != null,
                 isSnoozed,
                 canSnoozeNow: canSnooze(thread, { now: new Date().toISOString() }),
                 isRegeneratingTitle,
@@ -4715,6 +4719,7 @@ export default function Sidebar() {
                 supports: {
                   settlement: supportsSettlement,
                   autoSettleOptOut: supportsAutoSettleOptOut,
+                  mute: supportsMute,
                   snooze: supportsSnooze,
                   pinning: supportsPinning,
                   titleRegeneration: supportsTitleRegeneration,
@@ -4812,6 +4817,21 @@ export default function Sidebar() {
                 stackedThreadToast({
                   type: "error",
                   title: "Failed to update auto-settle",
+                  description: error instanceof Error ? error.message : "An error occurred.",
+                }),
+              );
+            }
+            return;
+          }
+          case "mute":
+          case "unmute": {
+            const result = await setThreadMuted(threadRef, clicked.value === "mute");
+            if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+              const error = squashAtomCommandFailure(result);
+              toastManager.add(
+                stackedThreadToast({
+                  type: "error",
+                  title: "Failed to update notifications",
                   description: error instanceof Error ? error.message : "An error occurred.",
                 }),
               );
@@ -4945,6 +4965,7 @@ export default function Sidebar() {
       serverConfigs,
       setProjectScopeKey,
       setThreadAutoSettle,
+      setThreadMuted,
       startThreadRename,
       threadGroupActions,
       threadGroupsEnabled,
