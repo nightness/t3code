@@ -71,6 +71,18 @@ export const SidebarProjectGroupingMode = Schema.Literals([
 ]);
 export type SidebarProjectGroupingMode = typeof SidebarProjectGroupingMode.Type;
 const DEFAULT_SIDEBAR_PROJECT_GROUPING_MODE: SidebarProjectGroupingMode = "repository";
+/**
+ * A user-defined sidebar section (beta, client-local): a named, ordered set of
+ * scoped thread keys (`environmentId:threadId`). A thread belongs to at most
+ * one group; lifecycle shelves (pinned, snoozed, settled) still win.
+ */
+export const SidebarThreadGroup = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  name: TrimmedNonEmptyString,
+  collapsed: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+  threadKeys: Schema.Array(Schema.String).pipe(Schema.withDecodingDefault(Effect.succeed([]))),
+});
+export type SidebarThreadGroup = typeof SidebarThreadGroup.Type;
 export const MIN_SIDEBAR_THREAD_PREVIEW_COUNT = 1;
 export const MAX_SIDEBAR_THREAD_PREVIEW_COUNT = 15;
 export const SidebarThreadPreviewCount = Schema.Int.check(
@@ -470,6 +482,14 @@ export const ClientSettingsSchema = Schema.Struct({
   // time, so manual placement there is ignored (and kept) while it is on.
   sidebarWorkingShelfEnabled: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(false)),
+  ),
+  // Beta: user-defined thread groups as sticky sections inside the inbox.
+  // Off by default so the sidebar stays an inbox until a user opts in.
+  sidebarThreadGroupsEnabled: Schema.Boolean.pipe(
+    Schema.withDecodingDefault(Effect.succeed(false)),
+  ),
+  sidebarThreadGroups: Schema.Array(SidebarThreadGroup).pipe(
+    Schema.withDecodingDefault(Effect.succeed([])),
   ),
   sidebarProjectGroupingMode: SidebarProjectGroupingMode.pipe(
     Schema.withDecodingDefault(Effect.succeed(DEFAULT_SIDEBAR_PROJECT_GROUPING_MODE)),
@@ -1919,6 +1939,8 @@ export const ClientSettingsPatch = Schema.Struct({
   showSkillsInSlashMenu: Schema.optionalKey(Schema.Boolean),
   legacySidebarEnabled: Schema.optionalKey(Schema.Boolean),
   sidebarWorkingShelfEnabled: Schema.optionalKey(Schema.Boolean),
+  sidebarThreadGroupsEnabled: Schema.optionalKey(Schema.Boolean),
+  sidebarThreadGroups: Schema.optionalKey(Schema.Array(SidebarThreadGroup)),
   sidebarProjectGroupingMode: Schema.optionalKey(SidebarProjectGroupingMode),
   sidebarProjectGroupingOverrides: Schema.optionalKey(
     Schema.Record(TrimmedNonEmptyString, SidebarProjectGroupingMode),

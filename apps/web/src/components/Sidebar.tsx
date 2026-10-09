@@ -219,6 +219,8 @@ import {
   sortSidebarV2ProjectGroups,
   sortThreadsForSidebar,
   sortWorkingThreadsBySend,
+  threadGroupHeaderMarker,
+  threadGroupIdOfMarker,
   useThreadJumpHintVisibility,
   useRetainedValue,
   useSidebarRowSubscriptionLease,
@@ -275,6 +277,17 @@ import {
 import { SidebarContent, SidebarGroup, useSidebar } from "./ui/sidebar";
 import { SidebarChromeFooter, SidebarChromeHeader } from "./sidebar/SidebarChrome";
 import { SidebarHeaderIconButton, SidebarThreadHeader } from "./sidebar/SidebarThreadHeader";
+import { ThreadGroupHeader } from "./sidebar/ThreadGroupHeader";
+import {
+  buildThreadGroupMenuItems,
+  flattenPartitionedInbox,
+  isThreadGroupMenuId,
+  parseThreadGroupMenuId,
+  partitionInboxThreads,
+  threadGroupIdByKey,
+  withThreadGroupMenuItems,
+} from "./sidebar/threadGroups.logic";
+import { useThreadGroupActions, useThreadGroups } from "./sidebar/useThreadGroups";
 import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuShortcut, MenuTrigger } from "./ui/menu";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { MiddleTruncate } from "./ui/middle-truncate";
@@ -2398,6 +2411,10 @@ export default function Sidebar() {
   const sidebarProjectSortOrder = useClientSettings((s) => s.sidebarProjectSortOrder);
   const timestampFormat = useClientSettings((s) => s.timestampFormat);
   const workingShelfEnabled = useClientSettings((s) => s.sidebarWorkingShelfEnabled);
+  // Thread groups (beta): user sections inside the inbox, off by default.
+  const { enabled: threadGroupsEnabled, groups: threadGroups } = useThreadGroups();
+  const threadGroupActions = useThreadGroupActions();
+  const [renamingThreadGroupId, setRenamingThreadGroupId] = useState<string | null>(null);
   const projectGroupingSettings = useClientSettings(selectProjectGroupingSettings);
   const {
     settleThread,
@@ -2771,7 +2788,7 @@ export default function Sidebar() {
     pinnedThreads,
     draggableThreadKeys,
     activeReorderableThreadKeys,
-    activeThreads,
+    activeThreads: inboxThreads,
     workingThreads,
     snoozedThreads,
     settledThreads,
@@ -2895,6 +2912,26 @@ export default function Sidebar() {
     workingShelfEnabled,
   ]);
 
+  // Thread groups partition the inbox: ungrouped rows first, then each group's
+  // members in inbox order. Collapsed groups render only their header.
+  const threadGroupPartition = useMemo(
+    () =>
+      partitionInboxThreads(
+        inboxThreads,
+        (thread) => scopedThreadKey(scopeThreadRef(thread.environmentId, thread.id)),
+        threadGroups,
+      ),
+    [inboxThreads, threadGroups],
+  );
+  const activeThreads = useMemo(
+    () => flattenPartitionedInbox(threadGroupPartition),
+    [threadGroupPartition],
+  );
+  const threadGroupIdByThreadKey = useMemo(() => threadGroupIdByKey(threadGroups), [threadGroups]);
+  const threadGroupIdByThreadKeyRef = useRef(threadGroupIdByThreadKey);
+  threadGroupIdByThreadKeyRef.current = threadGroupIdByThreadKey;
+  const threadGroupsRef = useRef(threadGroups);
+  threadGroupsRef.current = threadGroups;
   const threadSearchInputRef = useRef<HTMLInputElement>(null);
   const [threadSearchQuery, setThreadSearchQuery] = useState("");
   const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(0);
@@ -2902,12 +2939,13 @@ export default function Sidebar() {
   const searchableThreads = useMemo(
     () => [
       ...pinnedThreads,
-      ...activeThreads,
+      // Every inbox thread, including members of collapsed groups.
+      ...inboxThreads,
       ...workingThreads,
       ...snoozedThreads,
       ...settledThreads,
     ],
-    [activeThreads, pinnedThreads, settledThreads, snoozedThreads, workingThreads],
+    [inboxThreads, pinnedThreads, settledThreads, snoozedThreads, workingThreads],
   );
   const searchEnvironmentIds = useConnectedEnvironmentIds();
   // useThreadSearch owns the debounce and the two-character floor.
@@ -3468,6 +3506,8 @@ export default function Sidebar() {
     readonly occurredAt: string;
     readonly activationY: number | null;
     readonly targetSection: SidebarSection | null;
+    /** The thread group an inbox drop would join (null: ungrouped). */
+    readonly targetGroupId?: string | null | undefined;
     readonly contextDrag: boolean;
   } | null>(null);
   const isContextDrag = dragState?.contextDrag === true;
@@ -3808,9 +3848,16 @@ export default function Sidebar() {
     const pinnedRows = rowsOf(pinnedThreads, "pinned");
     items.push(...pinnedRows);
     items.push({ kind: "marker", marker: "pinned-divider" });
-    const activeRows = rowsOf(activeThreads, "active");
     items.push({ kind: "marker", marker: "active-placeholder" });
-    items.push(...activeRows);
+    if (threadGroupPartition.sections.length === 0) {
+      items.push(...rowsOf(activeThreads, "active"));
+    } else {
+      items.push(...rowsOf(threadGroupPartition.ungrouped, "active"));
+      for (const section of threadGroupPartition.sections) {
+        items.push({ kind: "marker", marker: threadGroupHeaderMarker(section.group.id) });
+        if (!section.group.collapsed) items.push(...rowsOf(section.threads, "active"));
+      }
+    }
     if (workingThreads.length > 0) {
       items.push({ kind: "marker", marker: "working-header" });
       items.push(...rowsOf(visibleWorkingThreads, "working"));
@@ -3828,6 +3875,7 @@ export default function Sidebar() {
     activeThreads,
     pinnedThreads,
     renderedSettledThreads,
+    threadGroupPartition,
     settledThreads.length,
     snoozedThreads.length,
     visibleSnoozedThreads,
@@ -3877,7 +3925,7 @@ export default function Sidebar() {
       setDragState((current) =>
         current === null || current.activeKey !== String(event.active.id)
           ? current
-          : { ...current, targetSection: target?.section ?? null },
+          : { ...current, targetSection: target?.section ?? null, targetGroupId: target?.groupId },
       );
     },
     [sidebarListItems],
@@ -3963,6 +4011,12 @@ export default function Sidebar() {
       (id) => {
         const target = resolveSidebarDropTarget(sidebarListItems, draggedThreadKey, id);
         if (target === null) return false;
+        // Joining another thread group is a valid drop on its own.
+        if (
+          target.groupId !== undefined &&
+          target.groupId !== (threadGroupIdByThreadKeyRef.current.get(draggedThreadKey) ?? null)
+        )
+          return true;
         return (
           planSidebarThreadDrop({
             activeKey: draggedThreadKey,
@@ -4013,6 +4067,14 @@ export default function Sidebar() {
           : resolveSidebarDropTarget(sidebarListItems, activeKey, String(event.over.id));
       const activeThread = threadByKey.get(activeKey);
       if (activeSection === undefined || target === null || activeThread === undefined) return;
+      // Thread groups are client-local: the drop's slot decides membership even
+      // when the server order does not change (a row dropped under a header).
+      if (
+        target.groupId !== undefined &&
+        target.groupId !== (threadGroupIdByThreadKeyRef.current.get(activeKey) ?? null)
+      ) {
+        threadGroupActions.assign(activeKey, target.groupId);
+      }
       const threadRef = scopeThreadRef(activeThread.environmentId, activeThread.id);
       const plan = planSidebarThreadDrop({
         activeKey,
@@ -4172,6 +4234,7 @@ export default function Sidebar() {
       sidebarListItems,
       threadByKey,
       unpinThread,
+      threadGroupActions,
       unsettleThread,
       unsnoozeThread,
       workingShelfEnabled,
@@ -4617,40 +4680,62 @@ export default function Sidebar() {
                 projectRef.projectId === thread.projectId,
             ),
           ) ?? null;
+        // Groups partition the inbox only, so lifecycle shelves offer no group items.
+        const threadGroupMenuItems =
+          threadGroupsEnabled && sectionByThreadKeyRef.current.get(threadKey) === "active"
+            ? buildThreadGroupMenuItems(
+                threadGroupsRef.current,
+                threadGroupIdByThreadKeyRef.current.get(threadKey) ?? null,
+              )
+            : [];
         const clicked = await settlePromise(() =>
           api.contextMenu.show(
-            buildThreadActionMenuItems({
-              canOperate: readEnvironmentScope(
-                threadRef.environmentId,
-                AuthOrchestrationOperateScope,
-              ),
-              branch: thread.branch ?? null,
-              projectFilter: threadProjectGroup
-                ? {
-                    label: threadProjectGroup.displayName,
-                    isActive: projectScopeKey === threadProjectGroup.projectKey,
-                  }
-                : null,
-              isPinned,
-              isSettled,
-              autoSettleEnabled: thread.autoSettleDisabledAt == null,
-              isSnoozed,
-              canSnoozeNow: canSnooze(thread, { now: new Date().toISOString() }),
-              isRegeneratingTitle,
-              isRunning: !threadRuntimeCanArchive(thread.runtime),
-              supports: {
-                settlement: supportsSettlement,
-                autoSettleOptOut: supportsAutoSettleOptOut,
-                snooze: supportsSnooze,
-                pinning: supportsPinning,
-                titleRegeneration: supportsTitleRegeneration,
-              },
-              snoozePresets,
-            }),
+            withThreadGroupMenuItems(
+              buildThreadActionMenuItems({
+                canOperate: readEnvironmentScope(
+                  threadRef.environmentId,
+                  AuthOrchestrationOperateScope,
+                ),
+                branch: thread.branch ?? null,
+                projectFilter: threadProjectGroup
+                  ? {
+                      label: threadProjectGroup.displayName,
+                      isActive: projectScopeKey === threadProjectGroup.projectKey,
+                    }
+                  : null,
+                isPinned,
+                isSettled,
+                autoSettleEnabled: thread.autoSettleDisabledAt == null,
+                isSnoozed,
+                canSnoozeNow: canSnooze(thread, { now: new Date().toISOString() }),
+                isRegeneratingTitle,
+                isRunning: !threadRuntimeCanArchive(thread.runtime),
+                supports: {
+                  settlement: supportsSettlement,
+                  autoSettleOptOut: supportsAutoSettleOptOut,
+                  snooze: supportsSnooze,
+                  pinning: supportsPinning,
+                  titleRegeneration: supportsTitleRegeneration,
+                },
+                snoozePresets,
+              }),
+              threadGroupMenuItems,
+            ),
             position,
           ),
         );
         if (clicked._tag === "Failure" || clicked.value === null) return;
+        if (isThreadGroupMenuId(clicked.value)) {
+          const action = parseThreadGroupMenuId(clicked.value);
+          if (action?.kind === "new") {
+            setRenamingThreadGroupId(await threadGroupActions.create("New group", [threadKey]));
+          } else if (action?.kind === "move") {
+            threadGroupActions.assign(threadKey, action.groupId);
+          } else if (action?.kind === "remove") {
+            threadGroupActions.assign(threadKey, null);
+          }
+          return;
+        }
         if (threadActionRequiresOperate(clicked.value) && !checkThreadOperations([thread])) return;
         if (clicked.value?.startsWith("snooze:")) {
           const preset =
@@ -4859,9 +4944,65 @@ export default function Sidebar() {
       setProjectScopeKey,
       setThreadAutoSettle,
       startThreadRename,
+      threadGroupActions,
+      threadGroupsEnabled,
       updateThreadMetadata,
       timestampFormat,
     ],
+  );
+
+  const commitThreadGroupRename = useCallback(
+    (groupId: string, name: string) => {
+      setRenamingThreadGroupId(null);
+      threadGroupActions.rename(groupId, name);
+    },
+    [threadGroupActions],
+  );
+  const cancelThreadGroupRename = useCallback(() => setRenamingThreadGroupId(null), []);
+  const handleThreadGroupContextMenu = useCallback(
+    (groupId: string, position: { x: number; y: number }) => {
+      void (async () => {
+        const api = readLocalApi();
+        if (!api) return;
+        const groups = threadGroupsRef.current;
+        const index = groups.findIndex((group) => group.id === groupId);
+        if (index === -1) return;
+        const clicked = await settlePromise(() =>
+          api.contextMenu.show(
+            [
+              { id: "rename" as const, label: "Rename group", icon: "pencil" },
+              { id: "up" as const, label: "Move up", disabled: index === 0 },
+              { id: "down" as const, label: "Move down", disabled: index === groups.length - 1 },
+              {
+                id: "delete" as const,
+                label: "Delete group",
+                icon: "trash",
+                destructive: true,
+                separatorBefore: true,
+              },
+            ],
+            position,
+          ),
+        );
+        if (clicked._tag === "Failure" || clicked.value === null) return;
+        switch (clicked.value) {
+          case "rename":
+            setRenamingThreadGroupId(groupId);
+            return;
+          case "up":
+            threadGroupActions.move(groupId, index - 1);
+            return;
+          case "down":
+            threadGroupActions.move(groupId, index + 1);
+            return;
+          case "delete":
+            // Its threads return to the inbox; nothing else is lost.
+            threadGroupActions.remove(groupId);
+            return;
+        }
+      })();
+    },
+    [threadGroupActions],
   );
 
   // Thread jump (cmd+1..9) and prev/next traversal reuse the same commands as
@@ -5532,6 +5673,39 @@ export default function Sidebar() {
                               />,
                             );
                             break;
+                          default: {
+                            const groupId = threadGroupIdOfMarker(item.marker);
+                            const section =
+                              groupId === null
+                                ? undefined
+                                : threadGroupPartition.sections.find(
+                                    (candidate) => candidate.group.id === groupId,
+                                  );
+                            if (section === undefined) break;
+                            items.push(
+                              <SortableSidebarMarker
+                                key={item.marker}
+                                marker={item.marker}
+                                data-testid={`sidebar-thread-group-${section.group.id}`}
+                                className="sticky top-0 z-10 mx-0.5 bg-sidebar"
+                              >
+                                <ThreadGroupHeader
+                                  group={section.group}
+                                  count={section.threads.length}
+                                  renaming={renamingThreadGroupId === section.group.id}
+                                  isDropTarget={
+                                    from !== null &&
+                                    dragTargetSection === "active" &&
+                                    dragState?.targetGroupId === section.group.id
+                                  }
+                                  onToggle={threadGroupActions.toggleCollapsed}
+                                  onCommitRename={commitThreadGroupRename}
+                                  onCancelRename={cancelThreadGroupRename}
+                                  onContextMenu={handleThreadGroupContextMenu}
+                                />
+                              </SortableSidebarMarker>,
+                            );
+                          }
                         }
                       }
                       return items;

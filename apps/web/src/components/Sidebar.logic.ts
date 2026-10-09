@@ -160,10 +160,39 @@ export type SidebarListMarker =
   | "pinned-divider"
   | "working-header"
   | "snoozed-header"
-  | "settled-header";
+  | "settled-header"
+  /** A user-defined thread group's header inside the inbox (beta). */
+  | `group-header:${string}`;
 
 export function sidebarMarkerId(marker: SidebarListMarker): string {
   return `${SIDEBAR_MARKER_PREFIX}${marker}`;
+}
+
+const GROUP_HEADER_MARKER_PREFIX = "group-header:";
+
+export function threadGroupHeaderMarker(groupId: string): SidebarListMarker {
+  return `${GROUP_HEADER_MARKER_PREFIX}${groupId}`;
+}
+
+/** The group a group-header marker belongs to, or null for any other marker. */
+export function threadGroupIdOfMarker(marker: SidebarListMarker): string | null {
+  return marker.startsWith(GROUP_HEADER_MARKER_PREFIX)
+    ? marker.slice(GROUP_HEADER_MARKER_PREFIX.length)
+    : null;
+}
+
+/** The thread group each inbox slot falls under, read off the group headers
+    above it (null before the first header and outside the inbox). */
+function threadGroupAtSidebarSlot(items: readonly SidebarListItem[], index: number): string | null {
+  let groupId: string | null = null;
+  for (let i = 0; i < index && i < items.length; i += 1) {
+    const item = items[i]!;
+    if (item.kind !== "marker") continue;
+    const headerGroup = threadGroupIdOfMarker(item.marker);
+    if (headerGroup !== null) groupId = headerGroup;
+    else if (item.marker !== "active-placeholder") groupId = null;
+  }
+  return groupId;
 }
 
 export type SidebarListItem =
@@ -197,6 +226,9 @@ export type SidebarDropTarget = {
   readonly section: "pinned" | "active" | "settled";
   readonly pinnedOrder: readonly string[];
   readonly activeOrder: readonly string[];
+  /** The thread group an inbox drop lands in (null: ungrouped). Absent when
+      the list has no group headers, or the drop is outside the inbox. */
+  readonly groupId?: string | null;
 };
 
 export function resolveSidebarDropTarget(
@@ -226,7 +258,12 @@ export function resolveSidebarDropTarget(
     } else if (currentSection === "pinned") pinnedOrder.push(item.key);
     else activeOrder.push(item.key);
   }
-  return { section, pinnedOrder, activeOrder };
+  const grouped =
+    section === "active" &&
+    items.some((item) => item.kind === "marker" && threadGroupIdOfMarker(item.marker) !== null);
+  return grouped
+    ? { section, pinnedOrder, activeOrder, groupId: threadGroupAtSidebarSlot(moved, overIndex) }
+    : { section, pinnedOrder, activeOrder };
 }
 
 export type SidebarThreadDropPlan =

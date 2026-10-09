@@ -578,6 +578,10 @@ export function useSettingsRestore(onRestored?: () => void) {
       DEFAULT_UNIFIED_SETTINGS.sidebarWorkingShelfEnabled
         ? ["Working section"]
         : []),
+      ...(settings.sidebarThreadGroupsEnabled !==
+      DEFAULT_UNIFIED_SETTINGS.sidebarThreadGroupsEnabled
+        ? ["Thread groups"]
+        : []),
       ...(settings.sidebarAutoSettleAfterDays !==
       DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleAfterDays
         ? ["Auto-settle inactive threads"]
@@ -714,6 +718,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       settings.sidebarProjectGroupingMode,
       settings.sidebarProjectSortOrder,
       settings.sidebarWorkingShelfEnabled,
+      settings.sidebarThreadGroupsEnabled,
       settings.sidebarThreadPreviewCount,
       settings.showSkillsInSlashMenu,
       settings.timestampFormat,
@@ -814,6 +819,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       sidebarProjectGroupingMode: DEFAULT_UNIFIED_SETTINGS.sidebarProjectGroupingMode,
       sidebarProjectSortOrder: DEFAULT_UNIFIED_SETTINGS.sidebarProjectSortOrder,
       sidebarWorkingShelfEnabled: DEFAULT_UNIFIED_SETTINGS.sidebarWorkingShelfEnabled,
+      sidebarThreadGroupsEnabled: DEFAULT_UNIFIED_SETTINGS.sidebarThreadGroupsEnabled,
       sidebarAutoSettleAfterDays: DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleAfterDays,
       sidebarAutoSettleOnMerge: DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleOnMerge,
       autoResumeLimitedThreads: DEFAULT_UNIFIED_SETTINGS.autoResumeLimitedThreads,
@@ -2396,6 +2402,33 @@ export function GeneralSettingsPanel() {
                 updateSettings({ sidebarWorkingShelfEnabled: Boolean(checked) })
               }
               aria-label="Working section (beta)"
+            />
+          }
+        />
+
+        <SettingsRow
+          {...searchableSetting("thread-groups")}
+          description="Organize inbox threads into your own groups with sticky headers. Right-click a thread to move it to a group, or drag it under a group's header."
+          resetAction={
+            settings.sidebarThreadGroupsEnabled !==
+            DEFAULT_UNIFIED_SETTINGS.sidebarThreadGroupsEnabled ? (
+              <SettingResetButton
+                label="thread groups"
+                onClick={() =>
+                  updateSettings({
+                    sidebarThreadGroupsEnabled: DEFAULT_UNIFIED_SETTINGS.sidebarThreadGroupsEnabled,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <Switch
+              checked={settings.sidebarThreadGroupsEnabled}
+              onCheckedChange={(checked) =>
+                updateSettings({ sidebarThreadGroupsEnabled: Boolean(checked) })
+              }
+              aria-label="Thread groups (beta)"
             />
           }
         />

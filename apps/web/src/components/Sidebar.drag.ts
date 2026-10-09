@@ -4,6 +4,8 @@ import {
   resolveSidebarDropTarget,
   sidebarListItemId,
   sidebarMarkerId,
+  threadGroupHeaderMarker,
+  threadGroupIdOfMarker,
   type SidebarListItem,
   type SidebarListMarker,
   type SidebarSection,
@@ -181,9 +183,37 @@ export function createSidebarSortingStrategy(input: {
     groups.settled = visible.map((key) => ({ kind: "thread", key, section: "settled" }));
     const projected: SidebarListItem[] = [];
     const marker = (name: SidebarListMarker) => projected.push({ kind: "marker", marker: name });
+    // Thread groups (beta) partition the inbox under their headers. The lifted
+    // row joins the group its drop slot falls under; other rows keep theirs.
+    const groupIds: string[] = [];
+    const groupOfKey = new Map<string, string>();
+    let currentGroup: string | null = null;
+    for (const item of items) {
+      if (item.kind === "marker") {
+        const headerGroup = threadGroupIdOfMarker(item.marker);
+        if (headerGroup !== null) groupIds.push(headerGroup);
+        if (headerGroup !== null || item.marker !== "active-placeholder")
+          currentGroup = headerGroup;
+      } else if (item.section === "active" && currentGroup !== null) {
+        groupOfKey.set(item.key, currentGroup);
+      }
+    }
+    if (target.section === "active") {
+      if (target.groupId == null) groupOfKey.delete(active.key);
+      else groupOfKey.set(active.key, target.groupId);
+    }
     const section = (name: "active" | "settled") => {
-      if (groups[name].length > 0) projected.push(...groups[name]);
+      const rows =
+        name === "active" && groupIds.length > 0
+          ? groups.active.filter((item) => !groupOfKey.has(item.key))
+          : groups[name];
+      if (rows.length > 0) projected.push(...rows);
       else marker(`${name}-placeholder`);
+      if (name !== "active") return;
+      for (const groupId of groupIds) {
+        marker(threadGroupHeaderMarker(groupId));
+        projected.push(...groups.active.filter((item) => groupOfKey.get(item.key) === groupId));
+      }
     };
     marker("pinned-header");
     projected.push(...groups.pinned);
