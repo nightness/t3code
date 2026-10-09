@@ -7,7 +7,7 @@
     "export:ios": "DENEXT_PLATFORM=ios deno task export",
     "export:android": "DENEXT_PLATFORM=android deno task export",
     "start": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.2/cli start .",
-    "desktop": "deno task export && deno run -A scripts/package-macos.ts --no-export && open \"dist/T3 Code.app\"",
+    "desktop": "deno run -A scripts/package-macos.ts && open \"dist/T3 Code.app\"",
     "desktop:scripts": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.2/cli desktop package --regenerate-scripts .",
     "desktop:package": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.2/cli desktop package ."
   },
