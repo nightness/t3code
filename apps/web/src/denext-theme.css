@@ -1,0 +1,451 @@
+/*
+ * denext-theme.css: "T3, sharpened" (overhaul P3).
+ *
+ * Imported once, after index.css (main.tsx). Plain CSS with no Tailwind
+ * directives, so the Vite and denext builds load it the same way.
+ *
+ * Three layers:
+ *   1. Primitives: OKLCH ramps from T3's accent and the neutral elevation
+ *      steps, generated with culori (src/denext/designTokens.ts).
+ *   2. Semantic: surface / text / border / accent / focus, motion, type
+ *      and spacing. Surfaces and text point at T3's own semantic variables,
+ *      which the theme engine drives (custom themes, VS Code imports and the
+ *      contrast boost's --contrast-* mixes), so every theme keeps working.
+ *   3. Component: sidebar, composer, message and code tokens, applied to
+ *      the key screens through their existing data attributes.
+ *
+ * The stock palette (no theme selected: html has no data-theme-id) is
+ * remapped onto the primitives. Any selected theme wins over that remap,
+ * because the remap only matches html:not([data-theme-id]).
+ */
+
+/* ── 1. Primitives ─────────────────────────────────────────────────────── */
+
+/* @generated:begin denext-theme primitives */
+/* From src/denext/designTokens.ts; regenerate with
+   `UPDATE_DENEXT_THEME=1 pnpm --filter @t3tools/web test src/denext/designTokens.test.ts`. */
+:root {
+  --dnx-accent-50: oklch(0.975 0.012 264);
+  --dnx-accent-100: oklch(0.94 0.028 264);
+  --dnx-accent-200: oklch(0.885 0.056 264);
+  --dnx-accent-300: oklch(0.81 0.095 264);
+  --dnx-accent-400: oklch(0.715 0.148 264);
+  --dnx-accent-500: oklch(0.62 0.204 264);
+  --dnx-accent-600: oklch(0.54 0.21 264);
+  --dnx-accent-700: oklch(0.465 0.193 264);
+  --dnx-accent-800: oklch(0.39 0.164 264);
+  --dnx-accent-900: oklch(0.315 0.126 264);
+  --dnx-accent-950: oklch(0.25 0.095 264);
+  --dnx-light-sunken: oklch(0.968 0.004 264);
+  --dnx-light-base: oklch(0.988 0.004 264);
+  --dnx-light-raised: oklch(1 0 264);
+  --dnx-light-overlay: oklch(1 0 264);
+  --dnx-light-hover: oklch(0.945 0.004 264);
+  --dnx-light-text-1: oklch(0.255 0.012 264);
+  --dnx-light-text-2: oklch(0.43 0.012 264);
+  --dnx-light-text-3: oklch(0.515 0.012 264);
+  --dnx-dark-sunken: oklch(0.14 0.006 264);
+  --dnx-dark-base: oklch(0.165 0.006 264);
+  --dnx-dark-raised: oklch(0.21 0.006 264);
+  --dnx-dark-overlay: oklch(0.24 0.006 264);
+  --dnx-dark-hover: oklch(0.262 0.006 264);
+  --dnx-dark-text-1: oklch(0.955 0.004 264);
+  --dnx-dark-text-2: oklch(0.775 0.004 264);
+  --dnx-dark-text-3: oklch(0.665 0.004 264);
+}
+/* @generated:end */
+
+/* ── 2. Semantic ───────────────────────────────────────────────────────── */
+
+:root {
+  /* Surfaces, lowest to highest. Elevation is luminance, not shadow. */
+  --dnx-surface-sunken: var(--sidebar);
+  --dnx-surface-0: var(--background);
+  --dnx-surface-1: var(--card);
+  --dnx-surface-2: var(--popover);
+  /* Text: the contrast-boosted mixes, so Settings -> Appearance -> Contrast applies. */
+  --dnx-text-1: var(--contrast-foreground);
+  --dnx-text-2: var(--contrast-muted-foreground);
+  --dnx-text-3: var(--contrast-placeholder);
+  --dnx-border-subtle: var(--contrast-border);
+  --dnx-border-strong: var(--contrast-input);
+  --dnx-accent: var(--primary);
+  --dnx-accent-fg: var(--primary-foreground);
+  --dnx-accent-soft: color-mix(in oklab, var(--primary) 12%, transparent);
+  --dnx-accent-line: color-mix(in oklab, var(--primary) 55%, transparent);
+  --dnx-focus: var(--ring);
+  --dnx-focus-width: 2px;
+  --dnx-focus-offset: 2px;
+
+  /* Type: six steps in rem, so the interface font-size setting still scales them.
+     Line heights sit on the 4 px half-grid. */
+  --dnx-type-caption: 0.6875rem;
+  --dnx-type-caption-lh: 1rem;
+  --dnx-type-label: 0.75rem;
+  --dnx-type-label-lh: 1rem;
+  --dnx-type-body: 0.875rem;
+  --dnx-type-body-lh: 1.25rem;
+  --dnx-type-prose-lh: 1.625;
+  --dnx-type-title: 1.125rem;
+  --dnx-type-title-lh: 1.5rem;
+  --dnx-type-headline: 1.375rem;
+  --dnx-type-headline-lh: 1.75rem;
+  --dnx-type-display: 1.75rem;
+  --dnx-type-display-lh: 2.25rem;
+  --dnx-tracking-tight: -0.015em;
+  --dnx-numeric: tabular-nums;
+
+  /* The 8 pt grid (4 px half steps). */
+  --dnx-space-1: 0.25rem;
+  --dnx-space-2: 0.5rem;
+  --dnx-space-3: 0.75rem;
+  --dnx-space-4: 1rem;
+  --dnx-space-5: 1.5rem;
+  --dnx-space-6: 2rem;
+  --dnx-space-7: 3rem;
+  --dnx-radius-sm: 0.375rem;
+  --dnx-radius-md: 0.625rem;
+  --dnx-radius-lg: 0.875rem;
+  --dnx-radius-xl: 1.25rem;
+
+  /* Motion: three durations, three curves. */
+  --dnx-duration-fast: 120ms;
+  --dnx-duration-base: 200ms;
+  --dnx-duration-slow: 320ms;
+  --dnx-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dnx-ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --dnx-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --dnx-rise: 4px;
+  --dnx-slide: 24px;
+
+  /* Tailwind's default for every transition utility without its own duration. */
+  --default-transition-duration: var(--dnx-duration-fast);
+  --default-transition-timing-function: var(--dnx-ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    /* No travel; what still animates is a short fade. */
+    --dnx-rise: 0px;
+    --dnx-slide: 0px;
+    --dnx-duration-base: 150ms;
+    --dnx-duration-slow: 150ms;
+  }
+}
+
+/* ── Stock palette remap (default theme only) ─────────────────────────── */
+
+html:not([data-theme-id]):not(.dark) {
+  --background: var(--dnx-light-base);
+  --app-chrome-background: var(--dnx-light-base);
+  --surface-raised: var(--dnx-light-raised);
+  --card: var(--dnx-light-raised);
+  --popover: var(--dnx-light-overlay);
+  --foreground: var(--dnx-light-text-1);
+  --card-foreground: var(--dnx-light-text-1);
+  --popover-foreground: var(--dnx-light-text-1);
+  --secondary-foreground: var(--dnx-light-text-1);
+  --accent-foreground: var(--dnx-light-text-1);
+  --muted-foreground: var(--dnx-light-text-2);
+  --placeholder: var(--dnx-light-text-3);
+  --secondary-label: var(--dnx-light-text-3);
+  --icon-muted: var(--dnx-light-text-3);
+  --accent: color-mix(in oklab, var(--dnx-light-text-1) 6%, transparent);
+  --border: color-mix(in oklab, var(--dnx-light-text-1) 11%, transparent);
+  --input: color-mix(in oklab, var(--dnx-light-text-1) 18%, transparent);
+  --primary: var(--dnx-accent-600);
+  --ring: var(--dnx-accent-500);
+  --message-surface: color-mix(in oklab, var(--dnx-accent-600) 7%, var(--dnx-light-raised));
+  --code-background: var(--dnx-light-sunken);
+  --sidebar: var(--dnx-light-sunken);
+}
+
+html.dark:not([data-theme-id]) {
+  --background: var(--dnx-dark-base);
+  --app-chrome-background: var(--dnx-dark-base);
+  --surface-raised: var(--dnx-dark-raised);
+  --card: var(--dnx-dark-raised);
+  --popover: var(--dnx-dark-overlay);
+  --foreground: var(--dnx-dark-text-1);
+  --card-foreground: var(--dnx-dark-text-1);
+  --popover-foreground: var(--dnx-dark-text-1);
+  --secondary-foreground: var(--dnx-dark-text-1);
+  --accent-foreground: var(--dnx-dark-text-1);
+  --muted-foreground: var(--dnx-dark-text-2);
+  --placeholder: var(--dnx-dark-text-3);
+  --secondary-label: var(--dnx-dark-text-3);
+  --icon-muted: var(--dnx-dark-text-3);
+  --secondary: color-mix(in oklab, var(--dnx-dark-text-1) 4%, transparent);
+  --muted: color-mix(in oklab, var(--dnx-dark-text-1) 4%, transparent);
+  --accent: color-mix(in oklab, var(--dnx-dark-text-1) 6%, transparent);
+  --border: color-mix(in oklab, var(--dnx-dark-text-1) 8%, transparent);
+  --input: color-mix(in oklab, var(--dnx-dark-text-1) 12%, transparent);
+  --primary: var(--dnx-accent-600);
+  --ring: var(--dnx-accent-400);
+  --message-surface: color-mix(in oklab, var(--dnx-accent-400) 9%, var(--dnx-dark-raised));
+  --code-background: var(--dnx-dark-sunken);
+  --sidebar: var(--dnx-dark-sunken);
+}
+
+/* index.css pins the sidebar subtree to literal zinc/black values; remap it too. */
+html:not([data-theme-id]):not(.dark) [data-app-sidebar] {
+  --background: var(--dnx-light-base);
+  --foreground: var(--dnx-light-text-1);
+  --card: var(--dnx-light-raised);
+  --card-foreground: var(--dnx-light-text-1);
+  --muted-foreground: var(--dnx-light-text-2);
+  --border: color-mix(in oklab, var(--dnx-light-text-1) 10%, transparent);
+  --sidebar: var(--dnx-light-sunken);
+  --sidebar-foreground: var(--dnx-light-text-1);
+  --sidebar-muted-foreground: var(--dnx-light-text-2);
+  --sidebar-row-hover: color-mix(in oklab, var(--dnx-light-text-1) 5%, transparent);
+  --sidebar-row-active: var(--dnx-light-raised);
+  --sidebar-row-selected: color-mix(in oklab, var(--dnx-accent-600) 8%, var(--dnx-light-raised));
+  --sidebar-border: color-mix(in oklab, var(--dnx-light-text-1) 9%, transparent);
+  --sidebar-stage-fade: var(--dnx-light-sunken);
+}
+
+html.dark:not([data-theme-id]) [data-app-sidebar] {
+  --background: var(--dnx-dark-sunken);
+  --foreground: var(--dnx-dark-text-1);
+  --card: var(--dnx-dark-sunken);
+  --card-foreground: var(--dnx-dark-text-1);
+  --muted-foreground: var(--dnx-dark-text-2);
+  --accent: color-mix(in oklab, var(--dnx-dark-text-1) 7%, transparent);
+  --border: color-mix(in oklab, var(--dnx-dark-text-1) 8%, transparent);
+  --sidebar: var(--dnx-dark-sunken);
+  --sidebar-foreground: var(--dnx-dark-text-1);
+  --sidebar-muted-foreground: var(--dnx-dark-text-2);
+  --sidebar-row-hover: color-mix(in oklab, var(--dnx-dark-text-1) 5%, transparent);
+  --sidebar-row-active: color-mix(in oklab, var(--dnx-accent-400) 10%, var(--dnx-dark-raised));
+  --sidebar-row-selected: color-mix(in oklab, var(--dnx-dark-text-1) 6%, transparent);
+  --sidebar-border: color-mix(in oklab, var(--dnx-dark-text-1) 7%, transparent);
+  --sidebar-stage-fade: var(--dnx-dark-sunken);
+}
+
+/* ── 3. Component tokens ──────────────────────────────────────────────── */
+
+:root {
+  --dnx-sidebar-indicator: var(--dnx-accent);
+  --dnx-composer-ring: var(--dnx-accent-line);
+  --dnx-composer-glow: var(--dnx-accent-soft);
+  --dnx-message-user-bg: var(--message-surface);
+  --dnx-message-user-border: color-mix(in oklab, var(--dnx-text-1) 7%, transparent);
+  --dnx-code-bg: var(--code-background);
+  --dnx-code-border: var(--dnx-border-subtle);
+}
+
+/* ── Focus ─────────────────────────────────────────────────────────────── */
+
+/* One ring everywhere a component has not drawn its own (`outline-none` +
+   ring utilities keep theirs; :where keeps this at zero specificity). */
+:where(
+  a[href],
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  summary,
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: var(--dnx-focus-width) solid var(--dnx-focus);
+  outline-offset: var(--dnx-focus-offset);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+
+/* The open thread carries an accent indicator on its leading edge. */
+[data-app-sidebar]
+  :is([data-testid="sidebar-row-card"], [data-testid="sidebar-row-slim"])[aria-current="page"] {
+  box-shadow: inset 2px 0 0 0 var(--dnx-sidebar-indicator);
+}
+
+[data-app-sidebar] [data-thread-item] :is(time, .tabular-nums) {
+  font-variant-numeric: var(--dnx-numeric);
+}
+
+/* ── Thread view / timeline ────────────────────────────────────────────── */
+
+[data-timeline-row-kind="message"][data-message-role="user"] .bg-message {
+  border: 1px solid var(--dnx-message-user-border);
+  border-radius: 1.125rem 1.125rem 0.375rem 1.125rem;
+  background-color: var(--dnx-message-user-bg);
+}
+
+[data-timeline-row-kind="message"][data-message-role="assistant"] .chat-markdown {
+  line-height: var(--dnx-type-prose-lh);
+}
+
+:is(.chat-markdown, .composer-tiptap) :is(h1, h2) {
+  letter-spacing: var(--dnx-tracking-tight);
+}
+
+.chat-markdown h1 {
+  font-size: var(--dnx-type-headline);
+  line-height: var(--dnx-type-headline-lh);
+}
+
+.chat-markdown h2 {
+  font-size: var(--dnx-type-title);
+  line-height: var(--dnx-type-title-lh);
+}
+
+.chat-markdown :not(pre) > code {
+  border: 1px solid var(--dnx-code-border);
+  border-radius: var(--dnx-radius-sm);
+  background-color: var(--dnx-code-bg);
+}
+
+.chat-markdown .chat-markdown-codeblock,
+.chat-markdown pre {
+  border-radius: var(--dnx-radius-lg);
+}
+
+[data-timeline-root] :is(time, [data-timestamp]) {
+  font-size: var(--dnx-type-caption);
+  font-variant-numeric: var(--dnx-numeric);
+}
+
+/* ── Composer ──────────────────────────────────────────────────────────── */
+
+/* Stock palette: the composer sits one luminance step above the canvas. */
+html:not([data-theme-id]) [data-slot="composer-shell"] {
+  --chat-composer-glass-surface: var(--dnx-surface-1);
+  --chat-composer-outline: var(--dnx-border-subtle);
+}
+
+html.dark:not([data-theme-id]) [data-slot="composer-shell"] {
+  --chat-composer-glass-surface: var(--dnx-dark-raised);
+  --chat-composer-outline: color-mix(in oklab, var(--dnx-dark-text-1) 9%, transparent);
+  --chat-composer-highlight: color-mix(in oklab, var(--dnx-dark-text-1) 5%, transparent);
+}
+
+/* Every theme: focus lifts the outline to the accent and adds a soft glow. */
+[data-slot="composer-shell"] [data-slot="composer-host"]::after {
+  transition:
+    border-color var(--dnx-duration-base) var(--dnx-ease-standard),
+    box-shadow var(--dnx-duration-base) var(--dnx-ease-standard);
+}
+
+[data-slot="composer-shell"]:focus-within [data-slot="composer-host"]::after {
+  border-color: var(--dnx-composer-ring);
+  box-shadow: 0 0 0 3px var(--dnx-composer-glow);
+}
+
+/* ── Pairing / onboarding (StandalonePage) ─────────────────────────────── */
+
+[data-standalone-page] {
+  background:
+    radial-gradient(
+      56rem 26rem at 50% -8%,
+      color-mix(in oklab, var(--dnx-accent) 16%, transparent),
+      transparent 70%
+    ),
+    var(--dnx-surface-0);
+}
+
+[data-standalone-page="error"] {
+  background:
+    radial-gradient(
+      56rem 26rem at 50% -8%,
+      color-mix(in oklab, var(--error) 16%, transparent),
+      transparent 70%
+    ),
+    var(--dnx-surface-0);
+}
+
+/* The accent glow replaces the stacked gradient backdrop. */
+[data-standalone-backdrop] {
+  display: none;
+}
+
+[data-standalone-card] {
+  overflow: hidden;
+  border-color: var(--dnx-border-subtle);
+  border-radius: var(--dnx-radius-xl);
+  background-color: var(--dnx-surface-1);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, var(--dnx-text-1) 6%, transparent),
+    0 32px 80px -40px rgb(0 0 0 / 55%);
+}
+
+[data-standalone-card]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--dnx-accent-line), transparent);
+}
+
+[data-standalone-card] h1 {
+  letter-spacing: var(--dnx-tracking-tight);
+}
+
+[data-standalone-card] input {
+  min-height: 2.5rem;
+}
+
+/* ── Motion: same-page <ViewTransition> classes (src/motion/ViewTransition.tsx) ── */
+
+::view-transition-group(*) {
+  animation-duration: var(--dnx-duration-base);
+  animation-timing-function: var(--dnx-ease-standard);
+}
+
+::view-transition-new(.dnx-enter-rise):only-child {
+  animation: dnx-enter-rise var(--dnx-duration-base) var(--dnx-ease-emphasized) both;
+}
+
+::view-transition-old(.dnx-exit-fade):only-child {
+  animation: dnx-fade-out var(--dnx-duration-fast) var(--dnx-ease-exit) both;
+}
+
+::view-transition-old(.dnx-crossfade) {
+  animation: dnx-fade-out var(--dnx-duration-fast) var(--dnx-ease-exit) both;
+}
+
+::view-transition-new(.dnx-crossfade) {
+  animation: dnx-fade-in var(--dnx-duration-base) var(--dnx-ease-standard) both;
+}
+
+::view-transition-new(.dnx-slide-in):only-child {
+  animation: dnx-slide-in var(--dnx-duration-slow) var(--dnx-ease-emphasized) both;
+}
+
+::view-transition-old(.dnx-slide-out):only-child {
+  animation: dnx-slide-out var(--dnx-duration-base) var(--dnx-ease-exit) both;
+}
+
+@keyframes dnx-enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--dnx-rise));
+  }
+}
+
+@keyframes dnx-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dnx-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dnx-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--dnx-slide));
+  }
+}
+
+@keyframes dnx-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(var(--dnx-slide));
+  }
+}

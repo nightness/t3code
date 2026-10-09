@@ -20,8 +20,15 @@ export function StandalonePage({
   readonly children: ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6">
-      <div className="pointer-events-none absolute inset-0 opacity-80" aria-hidden>
+    <div
+      data-standalone-page={tone}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground sm:px-6"
+    >
+      <div
+        data-standalone-backdrop
+        className="pointer-events-none absolute inset-0 opacity-80"
+        aria-hidden
+      >
         <div className={backdropClassNames[tone]} />
         {tone === "pairing" ? (
           <div className="absolute inset-y-0 left-0 w-72 bg-[radial-gradient(28rem_18rem_at_left,color-mix(in_srgb,var(--color-sky-500)_10%,transparent),transparent)]" />
@@ -36,6 +43,7 @@ export function StandalonePage({
       </div>
 
       <section
+        data-standalone-card
         className={`relative w-full max-w-xl rounded-2xl border border-border/80 shadow-2xl shadow-black/20 backdrop-blur-md ${tone === "brand" ? "overflow-hidden bg-card/94" : "bg-card/90"}`}
       >
         {masthead}
