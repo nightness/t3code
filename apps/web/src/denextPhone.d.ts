@@ -1,9 +1,11 @@
-// Types for the denext module only the phone exports import (the `.mobile` platform files:
-// components/ChatRouteContent.mobile.tsx). The denext export resolves `denext/navigation` to the
-// real module through deno.json's import map; tsc resolves through node_modules, where denext has
-// no package, so it reads these. They declare the subset the app uses, in React's types, and must
-// stay in step with denext's src/navigation/history-stack.ts, history-source.ts and
-// stack-layout.ts (denext ≥ 3.4.1, where HistoryStack first ships).
+// Types for the denext modules only the phone exports import (the `.mobile` platform files:
+// components/ChatRouteContent.mobile.tsx, components/sidebar/ThreadRowSwipe.mobile.tsx). The
+// denext export resolves `denext` and `denext/navigation` to the real modules through deno.json's
+// import map; tsc resolves through node_modules, where denext has no package, so it reads these.
+// They declare the subset the app uses, in React's types, and must stay in step with denext's
+// src/navigation/history-stack.ts, history-source.ts, stack-layout.ts and
+// src/client/swipe-row/swipeable-row.ts (denext ≥ 3.4.1, where HistoryStack and SwipeableRow
+// first ship).
 
 declare module "denext/navigation" {
   import type { ReactElement, ReactNode } from "react";
@@ -80,4 +82,40 @@ declare module "denext/navigation" {
 
   export function useStackNavigation(): StackNavigation;
   export function useScreenMatch(): ScreenMatch | null;
+}
+
+declare module "denext" {
+  import type { ReactElement, ReactNode } from "react";
+
+  export interface SwipeAction {
+    readonly label: string;
+    readonly onPress: () => void;
+    readonly icon?: ReactNode;
+    readonly tone?: "neutral" | "accent" | "destructive" | "warning" | "success";
+    readonly background?: string;
+    readonly color?: string;
+    readonly accessibilityLabel?: string;
+    readonly key?: string;
+  }
+
+  export type SwipeableRowSide = "leading" | "trailing";
+
+  export interface SwipeableRowProps {
+    readonly children?: ReactNode;
+    readonly leading?: readonly SwipeAction[];
+    readonly trailing?: readonly SwipeAction[];
+    readonly fullSwipe?: boolean | SwipeableRowSide;
+    readonly fullSwipeThreshold?: number;
+    readonly actionWidth?: number;
+    readonly haptics?: boolean;
+    readonly closeOnAction?: boolean;
+    readonly disabled?: boolean;
+    readonly onOpenChange?: (side: SwipeableRowSide | null) => void;
+    readonly as?: "div" | "li";
+    readonly className?: string;
+    readonly style?: Readonly<Record<string, string | number | undefined>>;
+    readonly contentStyle?: Readonly<Record<string, string | number | undefined>>;
+  }
+
+  export function SwipeableRow(props: SwipeableRowProps): ReactElement;
 }
