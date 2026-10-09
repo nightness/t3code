@@ -40,6 +40,7 @@
     "denext/desktop/window": "jsr:@denext/denext@^3.4.1/desktop/window",
     "denext/desktop/app": "jsr:@denext/denext@^3.4.1/desktop/app",
     "denext/mobile": "jsr:@denext/denext@^3.4.1/mobile",
+    "denext/navigation": "jsr:@denext/denext@^3.4.1/navigation",
     "~/": "./src/",
     "@std/http": "jsr:@std/http@^1.0.0",
     "@std/path": "jsr:@std/path@^1.0.0",

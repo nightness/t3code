@@ -1,10 +1,10 @@
 import { AuthPreviewOperateScope } from "@t3tools/contracts";
-import { Outlet, createFileRoute, redirect, useParams } from "@tanstack/react-router";
+import { createFileRoute, redirect, useParams } from "@tanstack/react-router";
 import { useAtomValue } from "@effect/atom-react";
 import { useEffect, useMemo } from "react";
 
 import { isCommandPaletteOpen } from "../commandPaletteBus";
-import { ThreadRouteView } from "../components/ThreadRouteView";
+import { ChatRouteContent } from "../components/ChatRouteContent";
 import { resolveThreadRouteTarget } from "../threadRoutes";
 import { useClientSettings, useLegacySidebarEnabled } from "../hooks/useSettings";
 import { openCommandPalette } from "../commandPaletteBus";
@@ -224,7 +224,7 @@ function ChatRouteLayout() {
   return (
     <>
       <ChatRouteGlobalShortcuts />
-      {threadTarget ? <ThreadRouteView target={threadTarget} /> : <Outlet />}
+      <ChatRouteContent threadTarget={threadTarget} />
     </>
   );
 }

@@ -32,6 +32,7 @@ import {
   usePanelNavigationSuppression,
 } from "../panelAnimations";
 import LegacyThreadSidebar from "./LegacySidebar";
+import { HiddenUnderPhoneStack } from "./phoneStack";
 import { useThreadVisitedMigration } from "../hooks/useThreadVisitedMigration";
 import ThreadSidebar from "./Sidebar";
 import { SettingsSidebarNav } from "./settings/SettingsSidebarNav";
@@ -307,36 +308,40 @@ export function AppSidebarLayout({ children }: { children: ReactNode }) {
       >
         <SidebarBrandWidthProbe onWidthChange={setBrandWidth} />
         <ProjectProjectionRetention />
-        <Sidebar
-          side="left"
-          collapsible="offcanvas"
-          data-app-sidebar=""
-          role="navigation"
-          aria-label={isOnSettings ? "Settings" : "Threads"}
-          resizable={{
-            maxWidth: sidebarMaximumWidth,
-            minWidth: sidebarMinimumWidth,
-            shouldAcceptWidth: ({ currentWidth, nextWidth, wrapper }) =>
-              nextWidth <= currentWidth ||
-              wrapper.clientWidth - nextWidth >= THREAD_MAIN_CONTENT_MIN_WIDTH,
-            storageKey: THREAD_SIDEBAR_WIDTH_STORAGE_KEY,
-            onResize: setSidebarWidth,
-          }}
-        >
-          {isOnSettings ? (
-            <>
-              <SidebarChromeHeader isElectron={isElectron} />
-              <SettingsSidebarNav pathname={pathname} />
-            </>
-          ) : legacySidebarEnabled ? (
-            <LegacyThreadSidebar />
-          ) : (
-            <ThreadSidebar />
-          )}
-          <SidebarRail onDoubleClick={resetSidebarWidth} />
-        </Sidebar>
+        <HiddenUnderPhoneStack>
+          <Sidebar
+            side="left"
+            collapsible="offcanvas"
+            data-app-sidebar=""
+            role="navigation"
+            aria-label={isOnSettings ? "Settings" : "Threads"}
+            resizable={{
+              maxWidth: sidebarMaximumWidth,
+              minWidth: sidebarMinimumWidth,
+              shouldAcceptWidth: ({ currentWidth, nextWidth, wrapper }) =>
+                nextWidth <= currentWidth ||
+                wrapper.clientWidth - nextWidth >= THREAD_MAIN_CONTENT_MIN_WIDTH,
+              storageKey: THREAD_SIDEBAR_WIDTH_STORAGE_KEY,
+              onResize: setSidebarWidth,
+            }}
+          >
+            {isOnSettings ? (
+              <>
+                <SidebarChromeHeader isElectron={isElectron} />
+                <SettingsSidebarNav pathname={pathname} />
+              </>
+            ) : legacySidebarEnabled ? (
+              <LegacyThreadSidebar />
+            ) : (
+              <ThreadSidebar />
+            )}
+            <SidebarRail onDoubleClick={resetSidebarWidth} />
+          </Sidebar>
+        </HiddenUnderPhoneStack>
         {children}
-        <SidebarControl />
+        <HiddenUnderPhoneStack>
+          <SidebarControl />
+        </HiddenUnderPhoneStack>
         <NavigationHistoryShortcuts />
         <MainAppLocationTracker />
       </SidebarProvider>
