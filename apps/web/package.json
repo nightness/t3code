@@ -74,7 +74,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@denext/denext": "npm:@jsr/denext__denext@^3.4.1",
+    "@denext/denext": "npm:@jsr/denext__denext@^3.4.2",
     "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@rolldown/plugin-babel": "^0.2.0",
