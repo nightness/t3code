@@ -246,7 +246,6 @@ import {
   type ThreadPanelPresentation,
 } from "../rightPanelLayout";
 import { PopoverCreateHandle } from "./ui/popover";
-import { RightPanelMotion } from "../motion/ViewTransition";
 import {
   pullRequestSurface,
   selectActiveRightPanel,
@@ -11875,9 +11874,7 @@ export default function ChatView(props: ChatViewProps) {
           pullRequestsAvailable={pullRequestsSurfaceAvailable}
           deviceAvailable={activeThreadRef !== null}
         >
-          <RightPanelMotion surfaceKey={renderedRightPanelSurface?.id ?? null}>
-            {rightPanelContent}
-          </RightPanelMotion>
+          {rightPanelContent}
         </RightPanelTabs>
       ) : null}
       {rightPanelPresent && shouldUsePlanSidebarSheet && activeThreadRef ? (
@@ -11935,9 +11932,7 @@ export default function ChatView(props: ChatViewProps) {
             pullRequestsAvailable={pullRequestsSurfaceAvailable}
             deviceAvailable={activeThreadRef !== null}
           >
-            <RightPanelMotion surfaceKey={renderedRightPanelSurface?.id ?? null}>
-              {rightPanelContent}
-            </RightPanelMotion>
+            {rightPanelContent}
           </RightPanelTabs>
         </RightPanelSheet>
       ) : null}

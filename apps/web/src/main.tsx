@@ -4,7 +4,6 @@ import { createHashHistory, createBrowserHistory } from "@tanstack/react-router"
 import { runtimePlatform } from "denext/mobile";
 
 import "./index.css";
-import "./denext-theme.css";
 
 import { prepareProviderAuthDelivery } from "./providerAuthDelivery";
 import { isElectron } from "./env";
