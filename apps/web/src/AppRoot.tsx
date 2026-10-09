@@ -1,6 +1,7 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import { BrowserProfileReporter } from "./browser/BrowserProfileReporter";
 import { ElectronBrowserHost } from "./browser/ElectronBrowserHost";
 import { QuitHoldOverlay } from "./components/QuitHoldOverlay";
 import { UiUpdateDialogHost } from "./components/UiUpdateDialogHost";
@@ -28,6 +29,7 @@ export function AppRoot({ router }: { readonly router: AppRouter }) {
     <AppAtomRegistryProvider>
       <RouterProvider router={router} />
       <ElectronBrowserHost />
+      <BrowserProfileReporter />
       <QuitHoldOverlay />
       <UiUpdateDialogHost />
     </AppAtomRegistryProvider>
