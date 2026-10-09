@@ -26,6 +26,7 @@
     "denext/jsx-dev-runtime": "jsr:@denext/denext@^3.4.0/jsx-dev-runtime",
     "denext/server": "jsr:@denext/denext@^3.4.0/server",
     "denext/client": "jsr:@denext/denext@^3.4.0/client",
+    "denext/plugin-kit": "jsr:@denext/denext@^3.4.0/plugin-kit",
     "react": "jsr:@denext/denext@^3.4.0/react",
     "react-dom": "jsr:@denext/denext@^3.4.0/react-dom",
     "react-dom/client": "jsr:@denext/denext@^3.4.0/react-dom/client",
