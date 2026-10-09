@@ -5687,12 +5687,13 @@ export default function Sidebar() {
                                 key={item.marker}
                                 marker={item.marker}
                                 data-testid={`sidebar-thread-group-${section.group.id}`}
-                                className="sticky top-0 z-10 mx-0.5 bg-sidebar"
+                                className="sticky top-0 z-10 mx-0.5 h-8 bg-sidebar"
                               >
                                 <ThreadGroupHeader
                                   group={section.group}
                                   count={section.threads.length}
                                   renaming={renamingThreadGroupId === section.group.id}
+                                  dragging={from !== null}
                                   isDropTarget={
                                     from !== null &&
                                     dragTargetSection === "active" &&

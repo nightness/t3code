@@ -1,18 +1,21 @@
 import { useState, type KeyboardEvent, type MouseEvent } from "react";
 
-import { cn } from "~/lib/utils";
 import { CollapsibleSectionHeader } from "../ui/collapsible-section-header";
 import { MAX_THREAD_GROUP_NAME_LENGTH, type ThreadGroup } from "./threadGroups.logic";
 
 /**
- * The sticky header of a user-defined thread group (sidebar beta). Same
- * geometry as the shelf headers (CollapsibleSectionHeader), with the group's
- * member count, an inline rename field and a context menu for group actions.
+ * The sticky header of a user-defined thread group (sidebar beta). It is the
+ * shelf header (SidebarSectionHeader) as T3 draws it: muted at rest, full
+ * strength while a row is lifted, the accent over the drop target, and the
+ * member count only while collapsed ("Settled (12)"). It adds an inline rename
+ * field and a context menu for group actions.
  */
 export function ThreadGroupHeader(props: {
   readonly group: ThreadGroup;
   readonly count: number;
   readonly renaming: boolean;
+  /** A sidebar row is lifted (the shelf headers read at full strength). */
+  readonly dragging: boolean;
   /** Accent while a lifted row would land in this group. */
   readonly isDropTarget: boolean;
   readonly onToggle: (groupId: string) => void;
@@ -38,21 +41,11 @@ export function ThreadGroupHeader(props: {
     <div onContextMenu={handleContextMenu} data-thread-group-header={group.id}>
       <CollapsibleSectionHeader
         expanded={!group.collapsed}
-        tone={props.isDropTarget ? "accent" : "emphasized"}
+        tone={props.isDropTarget ? "accent" : props.dragging ? "emphasized" : "muted"}
         onClick={() => props.onToggle(group.id)}
         data-testid={`sidebar-thread-group-toggle-${group.id}`}
-        accessory={
-          <span
-            className={cn(
-              "shrink-0 text-2xs tabular-nums",
-              props.isDropTarget ? "text-primary" : "text-sidebar-muted-foreground/70",
-            )}
-          >
-            {props.count}
-          </span>
-        }
       >
-        {group.name}
+        {group.collapsed ? `${group.name} (${props.count})` : group.name}
       </CollapsibleSectionHeader>
     </div>
   );
