@@ -64,7 +64,13 @@
       "ignoreDependencies": ["jsdom"],
       // Worktree setup (scripts/setup-worktree.ts) runs this directly. The denext CLI reads
       // denext.config.ts by filename, and `deno desktop` runs desktop.ts as its entry.
-      "entry": ["scripts/warm-dep-cache.ts", "denext.config.ts!", "desktop.ts!"],
+      "entry": [
+        "scripts/warm-dep-cache.ts",
+        "denext.config.ts!",
+        "desktop.ts!",
+        // denext platform files: a phone export resolves `./x.mobile.ts` in place of `./x.ts`.
+        "src/**/*.{ios,android,mobile}.{ts,tsx}!",
+      ],
       // UI component modules are copied and adapted as cohesive sets. Keep their
       // named subcomponents even before they have callers; the file audit still
       // reports an entire component module when nothing imports it.

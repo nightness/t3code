@@ -1,0 +1,39 @@
+/*
+ * Phone parity: where the iOS and Android builds follow T3's React Native app
+ * (apps/mobile) instead of the web app. Every rule is scoped to
+ * html[data-phone-parity], which only those exports set
+ * (phoneParity.mobile.ts); web and desktop never match it.
+ *
+ * Only metrics with a source in apps/mobile belong here, each cited. Colours
+ * stay the web theme's: apps/mobile's palette is the same neutral one
+ * (#0a0a0a canvas, #f5f5f5 text, #161616 user bubble in dark).
+ */
+
+/* Message body: MOBILE_TYPOGRAPHY.body, 16/23 (src/lib/typography.ts and
+   resolveMarkdownFontSizes in src/lib/appearancePreferences.ts), drawn in the
+   full foreground colour (--color-md-body). rem, so the interface size still
+   scales it as the RN base-size setting does. */
+html[data-phone-parity]
+  [data-timeline-row-kind="message"][data-message-role="assistant"]
+  .chat-markdown {
+  font-size: 1rem;
+  line-height: 1.4375;
+  color: var(--foreground);
+}
+
+/* User bubble: rounded-[20px] px-3.5 py-2.5, at most 85% of the column
+   (src/features/threads/ThreadFeed.tsx). */
+html[data-phone-parity] [data-timeline-row-kind="message"][data-message-role="user"] .bg-message {
+  max-width: 85%;
+  border-radius: 20px;
+  padding: 10px 14px;
+  line-height: 1.4375;
+}
+
+/* Message timestamps: font-t3-medium text-xs tabular-nums, 13/17
+   (ThreadFeed.tsx, global.css --text-xs). */
+html[data-phone-parity] [data-timeline-row-kind="message"] p.tabular-nums {
+  font-size: 0.8125rem;
+  line-height: 1.0625rem;
+  font-weight: 500;
+}

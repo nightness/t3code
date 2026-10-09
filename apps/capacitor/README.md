@@ -11,8 +11,13 @@ This is separate from `apps/mobile`, the Expo / React Native client.
 1. **Export the web app** (denext, not Vite):
 
    ```sh
-   cd apps/web && deno task export     # writes apps/web/out/
+   cd apps/web && deno task export:ios        # writes apps/web/out/ (or: deno task export:android)
    ```
+
+   The platform exports take denext's platform files: `src/denext/phoneParity.mobile.ts` turns
+   on the metrics where the phone build follows T3's React Native app (`phone-parity.css`). A
+   plain `deno task export` is the web build, with the web app's metrics. Sync each shell from
+   its own platform's export.
 
 2. **Copy it in and sync the native projects** (from `apps/capacitor`):
 
@@ -85,7 +90,7 @@ T3's part:
 **Prepare the server's export.** Stamp it after branding, exactly as `web:copy` does:
 
 ```sh
-cd apps/web && deno task export
+cd apps/web && deno task export:ios   # the shell's own platform: a shell refuses another platform's UI
 # The script resolves its target against the repo root, whatever the working directory.
 node ../../scripts/apply-web-brand-assets.ts production apps/web/out
 deno run -A --node-modules-dir=none <denext CLI> ota manifest out --sign ~/.config/t3code/ota-signing.key

@@ -4,6 +4,10 @@ import { createHashHistory, createBrowserHistory } from "@tanstack/react-router"
 import { runtimePlatform } from "denext/mobile";
 
 import "./index.css";
+// apps/mobile's phone metrics: the stylesheet is inert until the iOS and Android exports'
+// platform file (denext/phoneParity.mobile.ts) turns it on.
+import "./denext/phone-parity.css";
+import "./denext/phoneParity";
 
 import { prepareProviderAuthDelivery } from "./providerAuthDelivery";
 import { isElectron } from "./env";

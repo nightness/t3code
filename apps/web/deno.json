@@ -4,6 +4,8 @@
     "dev": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.0/cli dev .",
     "build": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.0/cli build .",
     "export": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.0/cli export . && node ../../scripts/apply-web-brand-assets.ts production apps/web/out",
+    "export:ios": "DENEXT_PLATFORM=ios deno task export",
+    "export:android": "DENEXT_PLATFORM=android deno task export",
     "start": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.0/cli start .",
     "desktop": "deno task export && deno run -A scripts/package-macos.ts --no-export && open \"dist/T3 Code.app\"",
     "desktop:scripts": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.0/cli desktop package --regenerate-scripts .",
