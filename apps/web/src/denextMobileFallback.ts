@@ -124,3 +124,60 @@ export function deviceInfo(): Promise<{
 export function runtimePlatform(): "ios" | "android" | "desktop" | "web" {
   return "web";
 }
+
+// Notifications (denext's src/mobile/local-notifications.ts and delivered-notifications.ts,
+// denext >= 3.4.2): only the desktop and phone platform files import these.
+
+interface NotificationCategory {
+  readonly id: string;
+  readonly actions: ReadonlyArray<{ readonly id: string; readonly title: string }>;
+}
+
+interface LocalNotificationTap {
+  readonly notification: {
+    readonly id: number;
+    readonly title?: string;
+    readonly body?: string;
+    readonly data: Readonly<Record<string, unknown>>;
+  };
+  readonly actionId: string;
+  readonly inputValue?: string;
+}
+
+export function scheduleNotification(_notification: {
+  readonly title: string;
+  readonly body: string;
+  readonly data?: Readonly<Record<string, unknown>>;
+  readonly categoryId?: string;
+  readonly threadId?: string;
+}): Promise<number> {
+  return Promise.reject(new Error("scheduleNotification: needs the native shell."));
+}
+
+export function setNotificationCategories(
+  _categories: ReadonlyArray<NotificationCategory>,
+): Promise<void> {
+  return Promise.resolve();
+}
+
+export function onLocalNotificationTapped(
+  _callback: (tap: LocalNotificationTap) => void,
+  _options?: PushTapOptions,
+): () => void {
+  return () => {};
+}
+
+export function removeDeliveredNotifications(_selector: {
+  readonly ids?: ReadonlyArray<string | number>;
+  readonly threadId?: string;
+  readonly tag?: string;
+  readonly all?: boolean;
+}): Promise<void> {
+  return Promise.resolve();
+}
+
+export function deliveredNotifications(): Promise<
+  ReadonlyArray<{ readonly id: string; readonly threadId?: string; readonly tag?: string }>
+> {
+  return Promise.resolve([]);
+}
