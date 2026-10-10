@@ -156,14 +156,6 @@ html[data-phone-parity]
   font-weight: 400;
 }
 
-/* A stack header's back button is the chevron alone, as apps/mobile's
-   headerBackButtonDisplayMode: "minimal" (Stack.tsx); its accessible name
-   stays the screen below's title. Only the phone Settings stack draws
-   denext/navigation's header (components/settings/phoneSettings.mobile.tsx). */
-html[data-phone-parity] [data-dnx-back] > span:last-child {
-  display: none;
-}
-
 /* The phone Home's list ends above its floating controls: on iOS the bottom
    toolbar (44 px + its 8 px margin; NATIVE_MAIL_SEARCH_TOOLBAR_CONTENT_INSET is
    56 px), on Android the New thread FAB (56 px, 16 px off the bottom) and the

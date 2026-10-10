@@ -3,8 +3,11 @@
 import { HistoryStack, type HistoryScreen, type HistorySource } from "denext/navigation";
 import type { ReactNode } from "react";
 
-// T3 draws its own headers (the thread header, the list's chrome): the stack adds none.
-const SCREEN_OPTIONS = { headerShown: false } as const;
+// T3 draws its own headers (the thread header, the list's chrome): the stack adds none. A
+// screen that turns the header on (the phone Settings stack) gets apps/mobile's back button
+// (Stack.tsx headerBackButtonDisplayMode: "minimal"): the chevron alone, with the title of the
+// screen below kept as its accessible name.
+const SCREEN_OPTIONS = { headerShown: false, headerBackButtonDisplayMode: "minimal" } as const;
 
 /**
  * The stack is a flex item of the sidebar layout's row, and its screens are absolutely

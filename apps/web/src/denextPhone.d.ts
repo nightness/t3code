@@ -25,6 +25,7 @@ declare module "denext/navigation" {
     readonly title?: string;
     readonly headerShown?: boolean;
     readonly headerBackTitle?: string;
+    readonly headerBackButtonDisplayMode?: "default" | "generic" | "minimal";
     readonly headerBackVisible?: boolean;
     readonly headerLeft?: ReactNode;
     readonly headerRight?: ReactNode;
