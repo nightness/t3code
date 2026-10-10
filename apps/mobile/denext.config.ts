@@ -33,7 +33,12 @@ export default {
   spa: {
     entry: "./index.ts",
     title: "T3 Code",
-    head: `<script>globalThis.__DENEXT_EXPO_CONFIG__=${JSON.stringify(expoConfig)}</script>`,
+    // The page's own background before the app's first frame: the expo-splash-screen colours
+    // (white, dark #0a0a0a), so the Capacitor shell never paints a white page in dark mode.
+    head:
+      `<script>globalThis.__DENEXT_EXPO_CONFIG__=${JSON.stringify(expoConfig)}</script>` +
+      "<style>html{background-color:#ffffff}" +
+      "@media (prefers-color-scheme: dark){html{background-color:#0a0a0a}}</style>",
     // The Capacitor shell loads files as they are: no .gz siblings.
     precompress: false,
   },
