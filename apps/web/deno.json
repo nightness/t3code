@@ -9,7 +9,9 @@
     "start": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.4/cli start .",
     "desktop": "deno run -A scripts/package-macos.ts && open \"dist/T3 Code.app\"",
     "desktop:scripts": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.4/cli desktop package --regenerate-scripts .",
-    "desktop:package": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.4/cli desktop package ."
+    "desktop:package": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.4/cli desktop package .",
+    "desktop:external": "T3_DESKTOP_SERVER=external deno task desktop",
+    "desktop:package:external": "T3_DESKTOP_SERVER=external deno task desktop:package"
   },
   "nodeModulesDir": "manual",
   "minimumDependencyAge": {

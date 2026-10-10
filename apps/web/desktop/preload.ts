@@ -44,7 +44,7 @@ import {
 
 import pkg from "../package.json" with { type: "json" };
 import { deepLinkHref } from "../src/deepLinks.ts";
-import { SERVER_SIDECAR_NAME, sidecarBootstrapToken } from "../src/desktopServerSidecar.ts";
+import { readSidecarBootstrapToken, SERVER_SIDECAR_NAME } from "../src/desktopServerSidecar.ts";
 
 const PRIMARY_LOCAL_ENVIRONMENT_ID = "primary";
 /** The keychain entries (the keychain service is the app identifier). */
@@ -67,14 +67,14 @@ const platform = (() => {
 // The app runs the server itself (the `server` sidecar, denext.config.ts) and hands the window the
 // bootstrap token it started it with, as Electron's preload does. Read once at load; the auth
 // requests below wait for it, so the UI's first look at the bootstraps already has it. Without
-// the sidecar (an older build) there is no token and the pairing screen works as before.
+// the sidecar (a build with T3_DESKTOP_SERVER=external, which talks to a server that is already
+// running) there is no token and the pairing screen works as before.
 let serverBootstrapToken: string | undefined;
-const serverSidecarLoaded: Promise<void> = sidecarInfo(SERVER_SIDECAR_NAME).then(
-  (info) => {
-    serverBootstrapToken = sidecarBootstrapToken(info);
-  },
-  () => undefined,
-);
+const serverSidecarLoaded: Promise<void> = readSidecarBootstrapToken(() =>
+  sidecarInfo(SERVER_SIDECAR_NAME),
+).then((token) => {
+  serverBootstrapToken = token;
+});
 
 function primaryBootstrap(): DesktopEnvironmentBootstrap {
   // WebSockets go through the runtime's loopback relay, whose URL (with its per-launch token)

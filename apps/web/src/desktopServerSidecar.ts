@@ -65,3 +65,19 @@ export function sidecarBootstrapToken(info: unknown): string | undefined {
   const token = (values as Record<string, unknown>)[SERVER_SIDECAR_TOKEN_KEY];
   return typeof token === "string" && token.length > 0 ? token : undefined;
 }
+
+/**
+ * The window's bootstrap token for the `server` sidecar: the token in what `load` answers, or
+ * `undefined` when there is none. An app built with `T3_DESKTOP_SERVER=external` declares no
+ * sidecar, so the lookup rejects (or answers without values) and the window pairs with the running
+ * server the way it always has: the pairing screen.
+ */
+export async function readSidecarBootstrapToken(
+  load: () => Promise<unknown>,
+): Promise<string | undefined> {
+  try {
+    return sidecarBootstrapToken(await load());
+  } catch {
+    return undefined;
+  }
+}

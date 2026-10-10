@@ -2,11 +2,17 @@
 import type { DenextConfig } from "denext/server";
 import pkg from "./package.json" with { type: "json" };
 import { loadRepoEnv } from "../../scripts/lib/public-config.ts";
+import { desktopServerProxy, desktopServerSelection } from "./src/desktopServerMode.ts";
 
 // T3 Connect's public config, read the way vite.config.ts reads it (the process env over
 // .env.local over .env at the repo root; `cp .env.example .env` gives the production values).
 // Without it the export has no cloud features: the Capacitor shell only pairs over the LAN.
 const repoEnv = loadRepoEnv();
+
+// Which server the Deno Desktop build talks to: its own `server` sidecar (the default), or one that
+// is already running (`T3_DESKTOP_SERVER=external`, see src/desktopServerMode.ts). Read when the
+// app is built; the packaged app carries the result in `.deno-desktop/config.json`.
+const desktopServer = desktopServerSelection(repoEnv);
 
 export default {
   mode: "spa",
@@ -53,10 +59,11 @@ export default {
     },
     // `deno task dev` (a browser on the dev server) reaches a T3 server started by hand. In the
     // desktop app the `server` sidecar takes the target over (`proxy: true` below), so a desktop
-    // build never talks to whatever runs on 3773.
+    // build never talks to whatever runs on 3773. With `T3_DESKTOP_SERVER=external` there is no
+    // sidecar and this is the server the desktop app connects to (T3_DESKTOP_SERVER_URL).
     proxy: {
       prefixes: ["/api", "/oauth", "/.well-known", "/ws"],
-      target: "http://127.0.0.1:3773",
+      ...desktopServerProxy(desktopServer),
     },
     // The designer's macOS master (dark appearance) instead of the auto-detected web touch icon.
     desktop: { icon: "../../assets/prod/black-macos-1024.png" },
@@ -82,27 +89,29 @@ export default {
     // launch) and exposes the token, which the window reads through `sidecarInfo("server")`
     // (desktop/preload.ts). Build the server first: `pnpm --filter t3 build:bundle`
     // (dist/desktop-sidecar.mjs).
-    sidecars: [
-      {
-        name: "server",
-        run: {
-          module: "../server/dist/desktop-sidecar.mjs",
-          nodeModules: "../server/node_modules",
-          // Loaded with require() at run time, or read their own files.
-          external: ["@cursor/sdk", "@ff-labs/fff-node", "playwright-core"],
-        },
-        port: "auto",
-        ready: { http: "/.well-known/t3/environment", timeoutMs: 60_000 },
-        restart: { on: "crash", backoffMs: 500, maxAttempts: 5, resetAfterMs: 30_000 },
-        // Time for the orchestration shutdown reconciliation Electron also waits for.
-        shutdown: { graceMs: 10_000 },
-        logs: "both",
-        proxy: true,
-        // Agents, git, terminals and tools run as the user, anywhere on disk and the network;
-        // node-pty, the keyring and fff are Node-API addons.
-        permissions: { net: ["*"], write: ["*"], run: ["*"], ffi: ["*"], sys: ["*"] },
-      },
-    ],
+    sidecars: !desktopServer.sidecar
+      ? []
+      : [
+          {
+            name: "server",
+            run: {
+              module: "../server/dist/desktop-sidecar.mjs",
+              nodeModules: "../server/node_modules",
+              // Loaded with require() at run time, or read their own files.
+              external: ["@cursor/sdk", "@ff-labs/fff-node", "playwright-core"],
+            },
+            port: "auto",
+            ready: { http: "/.well-known/t3/environment", timeoutMs: 60_000 },
+            restart: { on: "crash", backoffMs: 500, maxAttempts: 5, resetAfterMs: 30_000 },
+            // Time for the orchestration shutdown reconciliation Electron also waits for.
+            shutdown: { graceMs: 10_000 },
+            logs: "both",
+            proxy: true,
+            // Agents, git, terminals and tools run as the user, anywhere on disk and the network;
+            // node-pty, the keyring and fff are Node-API addons.
+            permissions: { net: ["*"], write: ["*"], run: ["*"], ffi: ["*"], sys: ["*"] },
+          },
+        ],
     // apps/web sits in a pnpm workspace with a manual node_modules: without these, `deno desktop`
     // type-checks against that node_modules (no @types/node there) and rewrites the root
     // package.json from pnpm-workspace.yaml.

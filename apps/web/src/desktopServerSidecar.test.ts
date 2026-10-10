@@ -8,6 +8,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   SERVER_SIDECAR_SECRET_NAMES,
   deriveDesktopBootstrapToken,
+  readSidecarBootstrapToken,
   serverSidecarSecrets,
   sidecarBootstrapToken,
 } from "./desktopServerSidecar";
@@ -66,5 +67,22 @@ describe("sidecarBootstrapToken", () => {
     ]) {
       expect(sidecarBootstrapToken(info)).toBeUndefined();
     }
+  });
+});
+
+describe("readSidecarBootstrapToken", () => {
+  it("reads the token of a sidecar the app runs", async () => {
+    await expect(
+      readSidecarBootstrapToken(async () => ({ values: { bootstrapToken: "t0k" } })),
+    ).resolves.toBe("t0k");
+  });
+
+  it("is undefined when the app declares no server sidecar (T3_DESKTOP_SERVER=external)", async () => {
+    await expect(
+      readSidecarBootstrapToken(() => Promise.reject(new Error("unknown sidecar: server"))),
+    ).resolves.toBeUndefined();
+    await expect(readSidecarBootstrapToken(async () => ({ name: "server" }))).resolves.toBe(
+      undefined,
+    );
   });
 });
