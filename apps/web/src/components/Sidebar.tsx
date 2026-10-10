@@ -281,6 +281,7 @@ import {
 import { SidebarContent, SidebarGroup, useSidebar } from "./ui/sidebar";
 import { SidebarChromeFooter, SidebarChromeHeader } from "./sidebar/SidebarChrome";
 import { PhoneNewTaskSheet } from "./sidebar/PhoneNewTaskSheet";
+import { IS_PHONE_EXPORT } from "../denext/phoneExport";
 import { PhoneHomeSearchButton, PhoneHomeToolbar } from "./sidebar/PhoneHomeToolbar";
 import { usePhoneHomeChrome } from "./sidebar/phoneHomeChrome";
 import { SidebarHeaderIconButton, SidebarThreadHeader } from "./sidebar/SidebarThreadHeader";
@@ -1839,7 +1840,8 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
         )}
       >
         <ThreadRowSwipe {...swipeProps}>
-          <Tooltip disabled={sortable?.isDragging}>
+          {/* The row's hover card: apps/mobile's rows have none, so the phone exports drop it. */}
+          <Tooltip disabled={sortable?.isDragging || IS_PHONE_EXPORT}>
             <TooltipTrigger
               render={
                 <div
@@ -2010,7 +2012,8 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
       )}
     >
       <ThreadRowSwipe {...swipeProps}>
-        <Tooltip disabled={snoozeMenuOpen || sortable?.isDragging}>
+        {/* The row's hover card: apps/mobile's rows have none, so the phone exports drop it. */}
+        <Tooltip disabled={snoozeMenuOpen || sortable?.isDragging || IS_PHONE_EXPORT}>
           <TooltipTrigger
             render={
               <div
