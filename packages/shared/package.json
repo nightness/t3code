@@ -474,6 +474,26 @@
     "./PtyAdapter": {
       "types": "./src/PtyAdapter.ts",
       "import": "./src/PtyAdapter.ts"
+    },
+    "./sessionTranscript/document": {
+      "types": "./src/sessionTranscript/document.ts",
+      "import": "./src/sessionTranscript/document.ts"
+    },
+    "./sessionTranscript/redact": {
+      "types": "./src/sessionTranscript/redact.ts",
+      "import": "./src/sessionTranscript/redact.ts"
+    },
+    "./sessionTranscript/build": {
+      "types": "./src/sessionTranscript/build.ts",
+      "import": "./src/sessionTranscript/build.ts"
+    },
+    "./sessionTranscript/csp": {
+      "types": "./src/sessionTranscript/csp.ts",
+      "import": "./src/sessionTranscript/csp.ts"
+    },
+    "./sessionTranscript/testFixtures": {
+      "types": "./src/sessionTranscript/testFixtures.ts",
+      "import": "./src/sessionTranscript/testFixtures.ts"
     }
   },
   "scripts": {
