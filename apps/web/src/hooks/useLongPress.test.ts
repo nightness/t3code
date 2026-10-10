@@ -131,15 +131,13 @@ describe("long press", () => {
     "a second finger": () => view.dispatchEvent(pointer("pointerdown", { pointerId: 2 })),
     blur: () => view.dispatchEvent(new Event("blur")),
   };
-  for (const [name, interrupt] of Object.entries(interruptions)) {
-    it(`cancels on ${name} before the delay`, () => {
-      press();
-      interrupt();
-      vi.advanceTimersByTime(LONG_PRESS_DELAY_MS);
-      expect(contextMenus).toHaveLength(0);
-      expect(click().defaultPrevented).toBe(false);
-    });
-  }
+  it.each(Object.entries(interruptions))("cancels on %s before the delay", (_name, interrupt) => {
+    press();
+    interrupt();
+    vi.advanceTimersByTime(LONG_PRESS_DELAY_MS);
+    expect(contextMenus).toHaveLength(0);
+    expect(click().defaultPrevented).toBe(false);
+  });
 
   it("ignores events from other pointers while pending", () => {
     press();
