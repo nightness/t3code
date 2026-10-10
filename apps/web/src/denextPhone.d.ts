@@ -1,9 +1,10 @@
 // Types for the denext modules only the phone exports import (the `.mobile` platform files:
-// components/ChatRouteContent.mobile.tsx, components/sidebar/ThreadRowSwipe.mobile.tsx). The
+// components/ChatRouteContent.mobile.tsx, components/sidebar/ThreadRowSwipe.mobile.tsx,
+// components/settings/phoneSettings.mobile.tsx, components/sidebar/PhoneNewTaskSheet.mobile.tsx). The
 // denext export resolves `denext` and `denext/navigation` to the real modules through deno.json's
 // import map; tsc resolves through node_modules, where denext has no package, so it reads these.
 // They declare the subset the app uses, in React's types, and must stay in step with denext's
-// src/navigation/history-stack.ts, history-source.ts, stack-layout.ts and
+// src/navigation/history-stack.ts, history-source.ts, stack-layout.ts, types.ts, sheet.ts and
 // src/client/swipe-row/swipeable-row.ts (denext ≥ 3.4.1, where HistoryStack and SwipeableRow
 // first ship).
 
@@ -23,6 +24,10 @@ declare module "denext/navigation" {
   export interface ScreenOptions {
     readonly title?: string;
     readonly headerShown?: boolean;
+    readonly headerBackTitle?: string;
+    readonly headerBackVisible?: boolean;
+    readonly headerLeft?: ReactNode;
+    readonly headerRight?: ReactNode;
     readonly gestureEnabled?: boolean;
     readonly fullScreenGestureEnabled?: boolean;
   }
@@ -81,6 +86,26 @@ declare module "denext/navigation" {
   }
 
   export function useStackNavigation(): StackNavigation;
+
+  /** A sheet's resting heights: a named detent, a fraction of the available height, or px. */
+  export type SheetDetent = "medium" | "large" | "fit" | number;
+
+  export interface SheetProps {
+    readonly open: boolean;
+    readonly onOpenChange?: (open: boolean) => void;
+    readonly onExitComplete?: () => void;
+    readonly detents?: readonly SheetDetent[];
+    readonly initialDetent?: number;
+    readonly grabber?: boolean;
+    readonly dismissible?: boolean;
+    readonly backdrop?: boolean;
+    readonly "aria-label"?: string;
+    readonly style?: Readonly<Record<string, string | number | undefined>>;
+    readonly children?: ReactNode;
+  }
+
+  /** A bottom sheet with detents, a grabber, drag to dismiss and a focus trap. */
+  export function Sheet(props: SheetProps): ReactElement | null;
   export function useScreenMatch(): ScreenMatch | null;
 }
 

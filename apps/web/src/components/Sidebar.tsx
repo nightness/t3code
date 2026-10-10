@@ -279,6 +279,8 @@ import {
 } from "./ui/combobox";
 import { SidebarContent, SidebarGroup, useSidebar } from "./ui/sidebar";
 import { SidebarChromeFooter, SidebarChromeHeader } from "./sidebar/SidebarChrome";
+import { PhoneNewTaskSheet } from "./sidebar/PhoneNewTaskSheet";
+import { usePhoneHomeChrome } from "./sidebar/phoneHomeChrome";
 import { SidebarHeaderIconButton, SidebarThreadHeader } from "./sidebar/SidebarThreadHeader";
 import { ThreadGroupHeader } from "./sidebar/ThreadGroupHeader";
 import {
@@ -5144,8 +5146,16 @@ export default function Sidebar() {
   // falling back to the top project) — same resolution the command palette
   // uses. The command palette already offers a "New thread in..." submenu
   // for multi-project setups.
+  // The phone Home starts a thread from apps/mobile's "Choose project" sheet instead
+  // (sidebar/PhoneNewTaskSheet.mobile.tsx).
+  const phoneHome = usePhoneHomeChrome();
+  const [phoneNewTaskOpen, setPhoneNewTaskOpen] = useState(false);
   const handleNewThreadClick = useCallback(
     (event?: ReactMouseEvent) => {
+      if (phoneHome) {
+        setPhoneNewTaskOpen(true);
+        return;
+      }
       // One project: nothing to pick, create immediately. Shift+click creates
       // directly in the current project even with several projects, skipping
       // the palette picker.
@@ -5162,7 +5172,7 @@ export default function Sidebar() {
       if (isMobile) setOpenMobile(false);
       openCommandPalette({ open: "new-thread-in" });
     },
-    [isMobile, newThreadContext, projectGroups.length, setOpenMobile],
+    [isMobile, newThreadContext, phoneHome, projectGroups.length, setOpenMobile],
   );
 
   // The button mirrors chat.new: in multi-project setups both route through
@@ -5181,6 +5191,14 @@ export default function Sidebar() {
     <>
       <ThreadContextDragGhost />
       <SidebarChromeHeader isElectron={isElectron} />
+      {phoneHome ? (
+        <PhoneNewTaskSheet
+          open={phoneNewTaskOpen}
+          onOpenChange={setPhoneNewTaskOpen}
+          projectGroups={projectGroups}
+          onAddProject={openAddProjectCommandPalette}
+        />
+      ) : null}
       <SidebarContent
         className="min-h-full"
         fixedHeader={
