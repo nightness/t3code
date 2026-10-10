@@ -15,6 +15,7 @@ import { resolveThreadRouteTarget, type ThreadRouteTarget } from "../threadRoute
 import LegacyThreadSidebar from "./LegacySidebar";
 import { PHONE_STACK_PATHS, phoneStackKey } from "./phoneStack.logic";
 import { PhoneStackView } from "./phoneStackView";
+import { PhoneHomeChromeContext } from "./sidebar/phoneHomeChrome";
 import ThreadSidebar from "./Sidebar";
 import { ThreadRouteView } from "./ThreadRouteView";
 import { Button } from "./ui/button";
@@ -44,7 +45,10 @@ function PhoneHome() {
     >
       {/* Inside the surface, as the drawer pads its content, so the safe areas keep its colour. */}
       <div className="flex h-full min-h-0 w-full flex-col pt-safe pr-safe pb-safe pl-safe">
-        {legacySidebarEnabled ? <LegacyThreadSidebar /> : <ThreadSidebar />}
+        {/* Its header is apps/mobile's Home header: no drawer toggle, settings at the end. */}
+        <PhoneHomeChromeContext value>
+          {legacySidebarEnabled ? <LegacyThreadSidebar /> : <ThreadSidebar />}
+        </PhoneHomeChromeContext>
       </div>
     </Sidebar>
   );

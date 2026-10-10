@@ -46,3 +46,12 @@ html[data-phone-parity] [data-timeline-row-kind="message"] p.tabular-nums {
   line-height: 1.0625rem;
   font-weight: 500;
 }
+
+/* The phone Home's title: CompactBrandTitle, "Code" in font-t3-medium at 21 px
+   with -0.5 px tracking, and the wordmark one cap high (15 px) beside it
+   (components/CompactBrandTitle.tsx). SidebarChrome.tsx marks it, and sets the
+   6 px gap (gap-1.5). */
+html[data-phone-parity] [data-phone-home-brand] {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
