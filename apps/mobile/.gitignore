@@ -39,3 +39,20 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# denext generated build artifacts
+.denext/
+out/
+ios/App/App/public/
+ios/App/build/
+ios/DerivedData/
+android/app/src/main/assets/public/
+android/app/build/
+android/build/
+android/.gradle/
+
+# denext web build (deno task web:prepare / export)
+global.gen.css
+public/fonts/
+deno.lock
+.deno.jsr.json

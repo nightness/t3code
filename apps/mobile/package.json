@@ -64,6 +64,7 @@
     "@shikijs/engine-javascript": "4.2.0",
     "@shikijs/langs": "4.2.0",
     "@shikijs/themes": "4.2.0",
+    "@sqlite.org/sqlite-wasm": "3.53.4-build1",
     "@t3tools/client-runtime": "workspace:*",
     "@t3tools/contracts": "workspace:*",
     "@t3tools/mobile-markdown-text": "file:./modules/t3-markdown-text",
@@ -117,6 +118,7 @@
     "expo-video": "~58.0.6",
     "expo-web-browser": "~58.0.4",
     "expo-widgets": "58.0.11",
+    "marked": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0-rc.3",
@@ -130,6 +132,7 @@
     "react-native-screens": "file:deps/react-native-screens-5.0.0-t3.7.tgz",
     "react-native-shiki-engine": "^0.3.12",
     "react-native-svg": "15.15.5",
+    "react-native-web": "0.21.2",
     "react-native-webview": "14.0.1",
     "react-native-worklets": "0.13.0",
     "shiki": "4.2.0",
@@ -137,6 +140,9 @@
     "uniwind": "1.12.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@effect/vitest": "catalog:",
     "@pierre/trees": "1.0.0-beta.6",
     "@types/react": "~19.3.0",

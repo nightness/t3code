@@ -626,6 +626,30 @@
         "licenseId": "MIT",
         "copyrights": ["Copyright (c) 2019-present Fabio Spampinato, Andrew Maney"]
       }
+    },
+    {
+      "name": "@sqlite.org/sqlite-wasm",
+      "version": "3.53.4-build1",
+      "generatedNotice": {
+        "licenseId": "Apache-2.0",
+        "copyrights": ["Copyright the SQLite WASM authors"]
+      }
+    },
+    {
+      "name": "@react-native/normalize-colors",
+      "version": "0.74.89",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": ["Copyright (c) Meta Platforms, Inc. and affiliates."]
+      }
+    },
+    {
+      "name": "tr46",
+      "version": "0.0.3",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": ["Copyright (c) Sebastian Mayr"]
+      }
     }
   ]
 }
