@@ -35,8 +35,11 @@ import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   isElectron,
+  phoneActions = null,
 }: {
   isElectron: boolean;
+  /** The phone Home's extra header controls, before Settings (Android's search button). */
+  phoneActions?: ReactNode;
 }) {
   const stageLabel = useEnvironmentStageLabel();
   const environmentIdentificationMode = useEnvironmentIdentificationMode();
@@ -80,7 +83,12 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           </div>
         ) : null}
       </div>
-      {phoneHome ? <PhoneHomeSettingsButton /> : null}
+      {phoneHome ? (
+        <>
+          {phoneActions}
+          <PhoneHomeSettingsButton />
+        </>
+      ) : null}
     </div>
   );
 });
@@ -204,7 +212,8 @@ function SidebarUtilityItem({
 
 export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const navigate = useNavigate();
-  // The phone Home's header carries Settings (PhoneHomeSettingsButton), as apps/mobile's does.
+  // apps/mobile's Home has no utility row: Settings is in its header (PhoneHomeSettingsButton),
+  // Usage and Pull Requests in Settings (components/settings/phoneSettings.mobile.tsx).
   const phoneHome = usePhoneHomeChrome();
   const navigateToMainApp = useNavigateToMainApp();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -241,6 +250,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigateToMainApp();
   }, [closeMobileSidebar, navigateToMainApp]);
 
+  if (phoneHome) return null;
   return (
     <SidebarMenu className="flex-row items-center">
       {isOnUtilityPage ? (
@@ -252,13 +262,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
         </SidebarMenuItem>
       ) : (
         <>
-          {phoneHome ? null : (
-            <SidebarUtilityItem
-              icon={<SettingsIcon />}
-              label="Settings"
-              onClick={handleSettingsClick}
-            />
-          )}
+          <SidebarUtilityItem
+            icon={<SettingsIcon />}
+            label="Settings"
+            onClick={handleSettingsClick}
+          />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
               icon={<PullRequestGlyph.pullRequest />}

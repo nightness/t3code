@@ -7,10 +7,13 @@
 // window (an iPad) keeps the sidebar nav, as apps/mobile's split view does.
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { tanstackHistory, type HistoryScreen } from "denext/navigation";
-import { ChevronRightIcon, XIcon } from "lucide-react";
+import { ChartNoAxesColumnIcon, ChevronRightIcon, XIcon } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { usePullRequestsSupported } from "../../state/environments";
+import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { PhoneStackView } from "../phoneStackView";
 import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { Button } from "../ui/button";
@@ -77,9 +80,10 @@ export function PhoneSettingsList() {
   const items = SETTINGS_NAV_ITEMS.filter(
     (item) => item.to !== "/settings/projects" || showOverview,
   );
+  const pullRequestsSupported = usePullRequestsSupported();
   return (
-    <div className="h-full overflow-y-auto bg-background px-5 pt-4 pb-safe">
-      <ul aria-label="Settings sections" className="overflow-hidden rounded-3xl bg-accent">
+    <div className="flex h-full flex-col gap-4 overflow-y-auto bg-background px-5 pt-4 pb-safe">
+      <ul aria-label="Settings sections" className="shrink-0 overflow-hidden rounded-3xl bg-accent">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -99,7 +103,55 @@ export function PhoneSettingsList() {
           );
         })}
       </ul>
+      {/* apps/mobile's "App" section (SettingsRouteScreen: Usage). The phone Home has no
+          utility row, so Pull Requests, which apps/mobile lacks, is reached from here too. */}
+      <section aria-labelledby="phone-settings-app" className="flex shrink-0 flex-col gap-2">
+        <h2 id="phone-settings-app" className="px-2 text-sm font-medium text-muted-foreground">
+          App
+        </h2>
+        <ul className="overflow-hidden rounded-3xl bg-accent">
+          <li>
+            <PhoneSettingsRow
+              icon={<ChartNoAxesColumnIcon className="size-5.5 shrink-0 text-foreground" />}
+              label="Usage"
+              onPress={() => void navigate({ to: "/usage" })}
+            />
+          </li>
+          {pullRequestsSupported ? (
+            <li>
+              <PhoneSettingsRow
+                icon={
+                  <PullRequestGlyph.pullRequest className="size-5.5 shrink-0 text-foreground" />
+                }
+                label="Pull Requests"
+                onPress={() =>
+                  void navigate({ to: "/pull-requests", search: readPullRequestListPreferences() })
+                }
+              />
+            </li>
+          ) : null}
+        </ul>
+      </section>
     </div>
+  );
+}
+
+/** apps/mobile's SettingsRow: the icon, the label in text-lg, a chevron. */
+function PhoneSettingsRow(props: {
+  readonly icon: ReactNode;
+  readonly label: string;
+  readonly onPress: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="flex w-full items-center gap-4 p-4 text-left active:bg-foreground/5"
+      onClick={props.onPress}
+    >
+      {props.icon}
+      <span className="min-w-0 flex-1 truncate text-lg text-foreground">{props.label}</span>
+      <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+    </button>
   );
 }
 

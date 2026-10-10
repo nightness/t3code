@@ -90,9 +90,10 @@ describe("SidebarChromeHeader", () => {
     // Sized as apps/mobile's CompactBrandTitle by phone-parity.css.
     expect(html).toContain("data-phone-home-brand");
     expect(count(html, button("Open settings"))).toBe(1);
-    // Settings moves to the header, so the footer no longer repeats it.
+    // apps/mobile's Home has no utility row: Settings is in the header, Usage and Pull Requests
+    // in Settings.
     expect(count(html, button("Settings"))).toBe(0);
-    expect(count(html, button("Pull Requests"))).toBe(1);
-    expect(count(html, button("Usage"))).toBe(1);
+    expect(count(html, button("Pull Requests"))).toBe(0);
+    expect(count(html, button("Usage"))).toBe(0);
   });
 });
