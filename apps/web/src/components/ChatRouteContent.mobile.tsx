@@ -10,9 +10,7 @@ import { tanstackHistory, useStackNavigation, type HistoryScreen } from "denext/
 import { ChevronLeftIcon } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 
-import { useLegacySidebarEnabled } from "../hooks/useSettings";
 import { resolveThreadRouteTarget, type ThreadRouteTarget } from "../threadRoutes";
-import LegacyThreadSidebar from "./LegacySidebar";
 import { PHONE_STACK_PATHS, phoneStackKey } from "./phoneStack.logic";
 import { PhoneStackView } from "./phoneStackView";
 import { PhoneThreadChromeContext } from "./phoneThreadChrome";
@@ -32,9 +30,12 @@ export function ChatRouteContent(props: {
   return <PhoneStack />;
 }
 
-/** The thread list as a full screen: the drawer's content, inline. */
+/**
+ * The thread list as a full screen: the drawer's content, inline. Always the current thread list,
+ * whatever the legacy-sidebar setting says: apps/mobile has one Home. A wider window (an iPad) keeps
+ * the setting in its drawer.
+ */
 function PhoneHome() {
-  const legacySidebarEnabled = useLegacySidebarEnabled();
   return (
     <Sidebar
       side="left"
@@ -49,7 +50,7 @@ function PhoneHome() {
       <div className="flex h-full min-h-0 w-full flex-col pt-safe pr-safe pb-safe pl-safe">
         {/* Its header is apps/mobile's Home header: no drawer toggle, settings at the end. */}
         <PhoneHomeChromeContext value>
-          {legacySidebarEnabled ? <LegacyThreadSidebar /> : <ThreadSidebar />}
+          <ThreadSidebar />
         </PhoneHomeChromeContext>
       </div>
     </Sidebar>
