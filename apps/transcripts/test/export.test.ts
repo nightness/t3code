@@ -15,12 +15,12 @@ const FIXTURE_ID = "demoTranscriptFixture0";
 const BASE_PATH = "/transcripts";
 const PAGE = `${BASE_PATH}/${FIXTURE_ID}/`;
 /**
- * The eager JavaScript budget for a transcript page (uncompressed). It is denext's Flight
- * entry plus its shared runtime chunk: the page's own code (the copy island) loads only on
- * interaction. denext 3.4.x loads that runtime eagerly even on a page whose every island is
- * deferred; once it boots such pages with a small delegated loader, lower this.
+ * The eager JavaScript budget for a transcript page (uncompressed). Every island on the page is
+ * deferred (the copy buttons load on interaction), so denext (3.4.4 and later) boots it with its
+ * small delegated loader alone: 1,929 B measured, under a 4 KiB budget. The client runtime and
+ * the island's code load on the first press.
  */
-const EAGER_JS_BUDGET_BYTES = 90 * 1024;
+const EAGER_JS_BUDGET_BYTES = 4 * 1024;
 const SCREENSHOTS = Deno.env.get("TRANSCRIPT_SCREENSHOTS");
 
 const html = await Deno.readTextFile(join(OUT, FIXTURE_ID, "index.html"));

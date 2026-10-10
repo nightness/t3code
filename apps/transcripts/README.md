@@ -66,8 +66,8 @@ timeline's markup, so it reads like the thread in the app. Tool calls expand wit
 island (`client:interaction`, in a `resumable` route): their code loads on the first press,
 which is then replayed. A one-line inline script applies the OS light/dark theme.
 
-Eager JavaScript today is denext's Flight entry and shared runtime, about 84 KB (32 KB gzip):
-denext 3.4 loads that runtime even when every island on a page is deferred.
+Eager JavaScript is denext's delegated island loader alone, about 1.9 KB (0.9 KB gzip): every
+island on the page is deferred, so the client runtime loads with the first press.
 
 ## Development
 
