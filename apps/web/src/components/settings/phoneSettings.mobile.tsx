@@ -167,9 +167,9 @@ export function PhoneSettingsLayout(props: PhoneSettingsLayoutProps): ReactNode 
       },
       {
         path: "/settings/$section",
-        // The page scrolls inside the screen, under the header.
+        // The page is the screen's one scroller (the settings page scrolls itself), under the header.
         render: () => (
-          <div className="flex h-full min-h-0 flex-col overflow-y-auto">{props.page}</div>
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">{props.page}</div>
         ),
         options: (match) => ({
           title: settingsBreadcrumbLabel(match.pathname) ?? "Settings",

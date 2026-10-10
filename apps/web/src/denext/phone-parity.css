@@ -170,20 +170,22 @@ html[data-phone-parity][data-phone-platform="android"]
 }
 
 /* The phone Home's list is one native scroller, as apps/mobile's (HomeScreen.tsx: a vertical
-   list that bounces even when its rows fit, React Native's alwaysBounceVertical default).
-   The scroll area's edge-fade mask is dropped: a mask on an iOS WebKit overflow scroller
-   takes it off the compositor's async touch scrolling, and apps/mobile's list has no fade.
-   Its content is at least one pixel taller than the viewport, so a drag always moves the list
-   (and rubber-bands) however few rows there are. The bottom padding above keeps the last row
-   clear of the floating toolbar. */
-html[data-phone-parity] [data-phone-home] [data-slot="scroll-area-viewport"] {
-  -webkit-mask-image: none;
-  mask-image: none;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-}
+   list that bounces even when its rows fit, React Native's alwaysBounceVertical default): a
+   plain overflow element (SidebarContent plainScroller), with no scroll-area fade (a mask on an
+   iOS WebKit scroller takes it off async touch scrolling) and no touch or wheel handlers on it
+   (a non-passive touchmove makes iOS wait on JavaScript for every move of a scroll). Its content
+   is at least one pixel taller than the scroller, so a drag always moves and rubber-bands the
+   list however few rows there are. The bottom padding above keeps the last row clear of the
+   floating toolbar. */
 html[data-phone-parity] [data-phone-home] [data-slot="sidebar-content"] {
   min-height: calc(100% + 1px);
+}
+
+/* One scroll container per screen, as UIKit: every phone stack screen (the Home list, a
+   thread's timeline, the Settings list and pages) scrolls its own content, so the stack's
+   screen body (denext/navigation's scroller around a screen) must not scroll too: a second
+   pan-y scroller around the list only competes for the touch. Its inline overflow needs the
+   override. The phone exports' only HistoryStacks are those screens. */
+html[data-phone-parity] [data-dnx-stack] [data-dnx-screen-body] {
+  overflow: hidden !important;
 }

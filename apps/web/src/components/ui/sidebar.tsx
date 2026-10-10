@@ -586,10 +586,44 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
 function SidebarContent({
   className,
   fixedHeader,
+  plainScroller = false,
   ...props
 }: React.ComponentProps<"div"> & {
   fixedHeader?: React.ReactNode;
+  /**
+   * Scroll in a plain overflow element instead of the scroll area (no custom scrollbar, no
+   * fade, no touch/wheel handlers on the scroller), as a native list does: the phone Home.
+   */
+  plainScroller?: boolean;
 }) {
+  const content = (
+    <div
+      // Reordered rows must not pull the viewport to their new position.
+      className={cn(
+        // Stacked groups share one inset between them instead of doubling
+        // it, including across the fixed header's boundary.
+        "flex w-full min-w-0 flex-col [overflow-anchor:none] group-data-[collapsible=icon]:overflow-hidden [&>[data-sidebar=group]+[data-sidebar=group]]:pt-0",
+        fixedHeader && "[&>[data-sidebar=group]:first-child]:pt-0",
+        className,
+      )}
+      data-sidebar="content"
+      data-slot="sidebar-content"
+      {...props}
+    />
+  );
+  if (plainScroller) {
+    return (
+      <>
+        {fixedHeader ? <div className="w-full shrink-0">{fixedHeader}</div> : null}
+        <div
+          className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain [overflow-anchor:none] [touch-action:pan-y]"
+          data-slot="sidebar-scroller"
+        >
+          {content}
+        </div>
+      </>
+    );
+  }
   return (
     <>
       {fixedHeader ? <div className="w-full shrink-0">{fixedHeader}</div> : null}
@@ -605,19 +639,7 @@ function SidebarContent({
         viewportTabIndex={-1}
         className="h-auto min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:[--fade-size:0.75rem]"
       >
-        <div
-          // Reordered rows must not pull the viewport to their new position.
-          className={cn(
-            // Stacked groups share one inset between them instead of doubling
-            // it, including across the fixed header's boundary.
-            "flex w-full min-w-0 flex-col [overflow-anchor:none] group-data-[collapsible=icon]:overflow-hidden [&>[data-sidebar=group]+[data-sidebar=group]]:pt-0",
-            fixedHeader && "[&>[data-sidebar=group]:first-child]:pt-0",
-            className,
-          )}
-          data-sidebar="content"
-          data-slot="sidebar-content"
-          {...props}
-        />
+        {content}
       </ScrollArea>
     </>
   );

@@ -100,18 +100,17 @@ describe("phone parity", () => {
     );
   });
 
-  it("keeps the phone Home's list one touch scroller that always moves under a drag", () => {
-    const viewport =
-      /\[data-phone-home\]\s+\[data-slot="scroll-area-viewport"\]\s*\{([^}]*)\}/.exec(css)?.[1] ??
-      "";
-    // No mask on the scroller (it breaks iOS WebKit's async touch scrolling), scrolls on y.
-    expect(viewport).toMatch(/mask-image:\s*none/);
-    expect(viewport).toMatch(/overflow-y:\s*auto/);
-    expect(viewport).toMatch(/touch-action:\s*pan-y/);
+  it("lets the phone Home's list always move under a drag, as apps/mobile's bounces", () => {
     const content =
       /\[data-phone-home\]\s+\[data-slot="sidebar-content"\]\s*\{([^}]*min-height[^}]*)\}/.exec(
         css,
       )?.[1] ?? "";
     expect(content).toMatch(/min-height:\s*calc\(100% \+ 1px\)/);
+  });
+
+  it("leaves each phone stack screen one scroller: the stack's screen body does not scroll", () => {
+    expect(css).toMatch(
+      /\[data-dnx-stack\]\s+\[data-dnx-screen-body\]\s*\{\s*overflow:\s*hidden !important;/,
+    );
   });
 });
