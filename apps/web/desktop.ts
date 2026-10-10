@@ -4,11 +4,29 @@
 // Backend reverse proxy: set `spa.proxy` in denext.config.ts (e.g. to reach a
 // local server same-origin so its session cookies persist).
 // Native capabilities come from `desktop.capabilities` in the config (default deny).
-import { resolveDesktopCapabilities, runDesktop } from "denext/desktop";
+import { defineSidecar, resolveDesktopCapabilities, runDesktop } from "denext/desktop";
 import config from "./denext.config.ts";
+import {
+  SERVER_SIDECAR_NAME,
+  SERVER_SIDECAR_SECRET_NAMES,
+  SERVER_SIDECAR_TOKEN_KEY,
+  serverSidecarSecrets,
+} from "./src/desktopServerSidecar.ts";
 
 await runDesktop({
   importMetaUrl: import.meta.url,
   proxy: config.spa?.proxy,
   ...(await resolveDesktopCapabilities(config, { base: import.meta.url })),
+  // The `server` sidecar is declared in denext.config.ts; its secrets are code: a fresh bootstrap
+  // secret per launch and the token derived from it (apps/desktop does the same), the token
+  // exposed to the window. An entry here replaces the config's field by field.
+  sidecars: config.desktop.sidecars
+    .filter((sidecar) => sidecar.name === SERVER_SIDECAR_NAME)
+    .map((sidecar) =>
+      defineSidecar({
+        ...sidecar,
+        secrets: () => serverSidecarSecrets(),
+        expose: { [SERVER_SIDECAR_TOKEN_KEY]: `$secret:${SERVER_SIDECAR_SECRET_NAMES.token}` },
+      }),
+    ),
 });

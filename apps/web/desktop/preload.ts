@@ -9,7 +9,8 @@
 // - the deep links Electron's main process handles (provider-auth returns), plus thread links.
 //
 // Every capability comes from denext (`denext/desktop/*`, `denext/mobile`); this file only maps the
-// contract onto it. What the denext build cannot do yet (SSH and WSL environments, the in-app
+// contract onto it. The local environment is the server the app runs as its `server` sidecar
+// (denext.config.ts). What the denext build cannot do yet (SSH and WSL environments, the in-app
 // preview, the Electron updater, the Codex sign-in handoff) is absent or answers "unavailable",
 // the way an older desktop shell would.
 
@@ -24,7 +25,7 @@ import type {
 import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
 import { setBadge } from "denext/desktop/app";
 import { installClerkDesktopBridge } from "denext/desktop/clerk";
-import { desktopOs, desktopWebSocketUrl, desktopWsUrl } from "denext/desktop/client";
+import { desktopOs, desktopWebSocketUrl, desktopWsUrl, sidecarInfo } from "denext/desktop/client";
 import {
   focusWindow,
   getWindowState,
@@ -43,6 +44,7 @@ import {
 
 import pkg from "../package.json" with { type: "json" };
 import { deepLinkHref } from "../src/deepLinks.ts";
+import { SERVER_SIDECAR_NAME, sidecarBootstrapToken } from "../src/desktopServerSidecar.ts";
 
 const PRIMARY_LOCAL_ENVIRONMENT_ID = "primary";
 /** The keychain entries (the keychain service is the app identifier). */
@@ -62,6 +64,18 @@ const platform = (() => {
 
 // --- The local (primary) environment: served through the app origin ---------------------------
 
+// The app runs the server itself (the `server` sidecar, denext.config.ts) and hands the window the
+// bootstrap token it started it with, as Electron's preload does. Read once at load; the auth
+// requests below wait for it, so the UI's first look at the bootstraps already has it. Without
+// the sidecar (an older build) there is no token and the pairing screen works as before.
+let serverBootstrapToken: string | undefined;
+const serverSidecarLoaded: Promise<void> = sidecarInfo(SERVER_SIDECAR_NAME).then(
+  (info) => {
+    serverBootstrapToken = sidecarBootstrapToken(info);
+  },
+  () => undefined,
+);
+
 function primaryBootstrap(): DesktopEnvironmentBootstrap {
   // WebSockets go through the runtime's loopback relay, whose URL (with its per-launch token)
   // denext injects before this preload runs. The socket path is part of the base: the client
@@ -75,18 +89,20 @@ function primaryBootstrap(): DesktopEnvironmentBootstrap {
     httpBaseUrl: `${location.origin}/`,
     // The relay reaches the same proxy (/ws).
     wsBaseUrl: hasRelay ? desktopWebSocketUrl("/ws") : null,
+    ...(serverBootstrapToken === undefined ? {} : { bootstrapToken: serverBootstrapToken }),
   };
 }
 
 /**
- * Pairing: Electron mints the bearer from the bootstrap token it started its own server with.
- * This build talks to a server it did not start, so the pairing credential the user enters in the
- * UI's pairing screen is exchanged for the bearer (the token exchange remote environments use),
- * kept in the keychain, and the page reloads onto it. Only the primary's browser-session request
- * is taken over; a failed exchange lets it through, so the screen reports the error as before.
+ * Pairing: the UI exchanges a bootstrap credential (the sidecar's token, or one the user enters in
+ * the pairing screen) through the browser-session request. The custom-scheme origin keeps no
+ * session cookie, so that request is taken over: the credential is exchanged for a bearer (the
+ * token exchange remote environments use), kept in the keychain, and the page reloads onto it. A
+ * failed exchange lets the request through, so the screen reports the error as before.
  */
 const nativeFetch = globalThis.fetch.bind(globalThis);
-const browserSessionUrl = `${location.origin}/api/auth/browser-session`;
+const authUrlPrefix = `${location.origin}/api/auth/`;
+const browserSessionUrl = `${authUrlPrefix}browser-session`;
 
 async function exchangePairingCredential(credential: string): Promise<boolean> {
   const response = await nativeFetch(`${location.origin}/oauth/token`, {
@@ -113,7 +129,11 @@ function requestUrl(input: RequestInfo | URL): string {
 }
 
 globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-  if (requestUrl(input) !== browserSessionUrl) return nativeFetch(input, init);
+  const url = requestUrl(input);
+  if (!url.startsWith(authUrlPrefix)) return nativeFetch(input, init);
+  // The UI reads the bootstraps right after its first session check: have the token by then.
+  await serverSidecarLoaded;
+  if (url !== browserSessionUrl) return nativeFetch(input, init);
   const request = new Request(input, init);
   if (request.method === "POST") {
     const body = (await request

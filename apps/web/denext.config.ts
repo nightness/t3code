@@ -51,6 +51,9 @@ export default {
       VITE_T3CODE_RELAY_URL: repoEnv.VITE_T3CODE_RELAY_URL?.trim() || "",
       VITE_WS_URL: "",
     },
+    // `deno task dev` (a browser on the dev server) reaches a T3 server started by hand. In the
+    // desktop app the `server` sidecar takes the target over (`proxy: true` below), so a desktop
+    // build never talks to whatever runs on 3773.
     proxy: {
       prefixes: ["/api", "/oauth", "/.well-known", "/ws"],
       target: "http://127.0.0.1:3773",
@@ -73,6 +76,33 @@ export default {
       singleInstance: true,
     },
     preload: "./desktop/preload.ts",
+    // The local environment: apps/server runs inside the app (Electron's DesktopBackendManager
+    // spawns it), in a worker of the app's own Deno runtime, on a free loopback port per launch.
+    // Its bootstrap secret and token are code, so desktop.ts adds them (`secrets`, made per
+    // launch) and exposes the token, which the window reads through `sidecarInfo("server")`
+    // (desktop/preload.ts). Build the server first: `pnpm --filter t3 build:bundle`
+    // (dist/desktop-sidecar.mjs).
+    sidecars: [
+      {
+        name: "server",
+        run: {
+          module: "../server/dist/desktop-sidecar.mjs",
+          nodeModules: "../server/node_modules",
+          // Loaded with require() at run time, or read their own files.
+          external: ["@cursor/sdk", "@ff-labs/fff-node", "playwright-core"],
+        },
+        port: "auto",
+        ready: { http: "/.well-known/t3/environment", timeoutMs: 60_000 },
+        restart: { on: "crash", backoffMs: 500, maxAttempts: 5, resetAfterMs: 30_000 },
+        // Time for the orchestration shutdown reconciliation Electron also waits for.
+        shutdown: { graceMs: 10_000 },
+        logs: "both",
+        proxy: true,
+        // Agents, git, terminals and tools run as the user, anywhere on disk and the network;
+        // node-pty, the keyring and fff are Node-API addons.
+        permissions: { net: ["*"], write: ["*"], run: ["*"], ffi: ["*"], sys: ["*"] },
+      },
+    ],
     // apps/web sits in a pnpm workspace with a manual node_modules: without these, `deno desktop`
     // type-checks against that node_modules (no @types/node there) and rewrites the root
     // package.json from pnpm-workspace.yaml.
