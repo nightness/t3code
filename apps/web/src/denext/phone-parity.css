@@ -59,8 +59,10 @@ html[data-phone-parity] [data-phone-home-brand] {
 /* The phone Home's thread rows: apps/mobile's flat list rows
    (features/threads/thread-list-v2-items.tsx, the non-sidebar-pane branch).
    Content box px-5 py-2.5 on iOS, px-3 py-2.5 on Android
-   (thread-list-v2-row-appearance.ts / .android.ts); the list keeps its 8 px
-   inset, so the row pads the rest. Head line: project name text-sm 14/19
+   (thread-list-v2-row-appearance.ts / .android.ts); the rows span the screen
+   (the list reaches over its group's side inset; the group's other content,
+   such as the Settled header, keeps it), so the hairline runs from 20 px to
+   the screen edge. Head line: project name text-sm 14/19
    font-t3-medium, the time text-xs 13/17. Title: mt-1, text-base 16/23,
    font-t3-medium, text-foreground, at most two lines. Meta line (branch, PR,
    provider icon at the trailing edge): mt-1, text-xs 13/17. Rows touch; on
@@ -72,6 +74,15 @@ html[data-phone-parity] [data-phone-home-brand] {
 html[data-phone-parity] [data-phone-home] ul:has(> li[data-thread-item]) {
   gap: 0;
 }
+html[data-phone-parity] [data-phone-home] ul:has(> li[data-thread-item]) {
+  margin-inline: calc(-1 * var(--sidebar-content-inset));
+}
+html[data-phone-parity]
+  [data-phone-home]
+  ul:has(> li[data-thread-item])
+  > :not(li[data-thread-item]) {
+  padding-inline: var(--sidebar-content-inset);
+}
 html[data-phone-parity] [data-phone-home] li[data-thread-item] {
   padding-block: 0;
   contain-intrinsic-size: auto 85px;
@@ -80,8 +91,7 @@ html[data-phone-parity] [data-phone-home] li[data-thread-item]::after {
   content: "";
   display: block;
   height: 1px;
-  margin-left: 12px;
-  margin-right: -8px;
+  margin-left: 20px;
   background: color-mix(in srgb, var(--border) 70%, transparent);
 }
 html[data-phone-parity][data-phone-platform="android"]
@@ -95,10 +105,10 @@ html[data-phone-parity] [data-phone-home] [data-testid="sidebar-row-card"] {
 }
 html[data-phone-parity] [data-phone-home] [data-thread-row-content] {
   height: auto;
-  padding: 10px 12px;
+  padding: 10px 20px;
 }
 html[data-phone-parity][data-phone-platform="android"] [data-phone-home] [data-thread-row-content] {
-  padding: 10px 4px;
+  padding: 10px 12px;
 }
 html[data-phone-parity] [data-phone-home] [data-thread-row-head] {
   height: auto;
