@@ -98,8 +98,15 @@ const SCREENS: readonly HistoryScreen[] = [
 
 // T3 draws its own headers (the thread header, the list's chrome): the stack adds none.
 const SCREEN_OPTIONS = { headerShown: false } as const;
-// Screens paint T3's background, not the platform theme's.
-const STACK_STYLE = { "--dnx-screen-bg": "var(--background)" } as const;
+// The stack is a flex item of the sidebar layout's row, and its screens are absolutely positioned,
+// so it has no width of its own: it must fill the row, or every screen is 0 px wide (a blank
+// Home). Screens paint T3's background, not the platform theme's.
+const STACK_STYLE = {
+  flex: "1 1 0%",
+  minWidth: 0,
+  width: "100%",
+  "--dnx-screen-bg": "var(--background)",
+} as const;
 
 function PhoneStack() {
   const router = useRouter();
