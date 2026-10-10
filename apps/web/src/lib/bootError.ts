@@ -3,6 +3,9 @@ export function showBootError(error: unknown) {
   console.error("T3 Code failed to start.", error);
   const bootShell = document.getElementById("boot-shell");
   if (!bootShell) return;
+  // The prerendered shell (AppShell.static.tsx) shows its splash, where the error goes, only on
+  // the routes it has no layout for; a failed start shows it everywhere.
+  document.documentElement.dataset.t3Shell = "splash";
 
   const content = document.createElement("div");
   content.id = "boot-error";

@@ -72,6 +72,10 @@
         "scripts/warm-dep-cache.ts",
         "denext.config.ts!",
         "desktop.ts!",
+        // denext.config.ts's spa.shell: denext renders the shell component at build and inlines
+        // the boot script, each named by path.
+        "src/AppShell.static.tsx!",
+        "src/appShellBoot.ts!",
         // denext platform files: a phone export resolves `./x.mobile.ts` in place of `./x.ts`.
         "src/**/*.{ios,android,mobile}.{ts,tsx}!",
       ],

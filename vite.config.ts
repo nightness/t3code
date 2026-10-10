@@ -336,6 +336,12 @@ export default defineConfig({
         rules: { "shadcn/no-arbitrary-values": "off" },
       },
       {
+        // The prerendered shell (spa.shell) is static markup in the booted app's exact classes,
+        // components/ui's included, which it cannot import (no app state before the bundle).
+        files: ["apps/web/src/AppShell.static.tsx"],
+        rules: { "shadcn/no-arbitrary-values": "off" },
+      },
+      {
         // Shared client code must not call APIs missing from Hermes. Our ESNext
         // TypeScript target accepts them even when they would crash mobile at launch.
         // Tests run on Node and are exempt.

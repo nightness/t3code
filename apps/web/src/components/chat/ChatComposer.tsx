@@ -7436,6 +7436,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                 <ComposerContextActionsContext value={composerContextActions}>
                   <ComposerPromptEditor
                     ariaLabel="Message"
+                    shellHandoffKey="composer"
                     suggestionListId={composerSuggestionListId}
                     activeSuggestionId={
                       composerSuggestionListVisible && activeComposerMenuItem

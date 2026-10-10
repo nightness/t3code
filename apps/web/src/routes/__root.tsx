@@ -81,6 +81,7 @@ import {
 
 import { getDesktopSnapShotBridge } from "../lib/desktopSnapShot";
 import { installDesktopPasteAsText } from "../lib/desktopPasteAsText";
+import { releasesAppShellAt, useReleaseAppShell } from "../appShellRelease";
 import { shouldResumeSnapShotSetupOnStartup } from "../lib/snapShotSetupResume";
 
 export const Route = createRootRoute({
@@ -140,6 +141,7 @@ function RootRouteNotFoundView() {
 function RootRouteView() {
   useEffect(() => installDesktopPasteAsText(window.desktopBridge, window), []);
   const pathname = useLocation({ select: (location) => location.pathname });
+  useReleaseAppShell(releasesAppShellAt(pathname));
   const { authGateState } = Route.useRouteContext();
   const primaryEnvironmentAuthenticated = authGateState.status === "authenticated";
   const returningFromWelcomeRef = useRef(pathname === "/welcome");
