@@ -21,6 +21,8 @@ export const DENEXT_REACT_ENTRIES: Record<string, string> = {
   "react-dom/client": denextModule("compat/react-dom-client.js"),
   "react-dom/server": denextModule("compat/react-dom-server.js"),
   "react-is": denextModule("compat/react-is.js"),
+  // The phone stack (components/phoneStackView.tsx), which only the `denext` project renders.
+  "denext/navigation": denextModule("navigation/mod.js"),
 };
 
 /** Exact-match aliases, so `react-dom/client` is not caught by `react-dom`. */

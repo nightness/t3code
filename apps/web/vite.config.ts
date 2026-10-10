@@ -80,6 +80,9 @@ const unitTestProject = {
   test: {
     name: "unit",
     include: ["src/**/*.test.{ts,tsx}"],
+    // Renders denext's real HistoryStack (denext/navigation), which only the `denext` project
+    // resolves (vite/denextReact.ts).
+    exclude: ["**/node_modules/**", "src/components/phoneStackView.test.tsx"],
     // The web runtime suite exercises auth bootstrap, saved environments,
     // and websocket subscription lifecycles. Under the full monorepo test
     // run, those async tests can exceed Vitest's default 5s budget.
