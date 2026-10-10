@@ -36,6 +36,23 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
+# generated native folders (ios/ is the committed Capacitor shell of the denext web build;
+# expo prebuild is not run on this branch)
 /android
+
+# denext generated build artifacts
+.denext/
+out/
+ios/App/App/public/
+ios/App/build/
+ios/DerivedData/
+android/app/src/main/assets/public/
+android/app/build/
+android/build/
+android/.gradle/
+
+# denext web build (deno task web:prepare / export)
+global.gen.css
+public/fonts/
+deno.lock
+.deno.jsr.json
