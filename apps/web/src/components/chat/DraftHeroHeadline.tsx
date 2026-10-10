@@ -39,6 +39,7 @@ import {
 } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { InlineButton } from "../ui/button";
+import { IS_PHONE_EXPORT } from "~/denext/phoneExport";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 
 // Menu value for "No project"; real entries are keyed by logical project key.
@@ -335,7 +336,9 @@ export function DraftHeroHeadline({
   const noProjectShortcut = shortcutLabelForCommand(keybindings, "chat.newWithoutProject");
   const orStartWithoutProject =
     scratchWorkspaceRoot !== null && !isScratchDraft && (hasResolvedProject || canChooseProject) ? (
-      <Tooltip>
+      // The tooltip is the keyboard shortcut: none on the phone exports, as apps/mobile shows no
+      // shortcut hints.
+      <Tooltip disabled={IS_PHONE_EXPORT}>
         <TooltipTrigger
           render={
             <InlineButton
