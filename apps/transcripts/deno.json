@@ -1,0 +1,29 @@
+{
+  "//": "The session transcript renderer: a denext App Router app that exports redacted T3 thread transcripts to static, near-zero-JS HTML. Released denext only (plan decision D7).",
+  "tasks": {
+    "dev": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.2/cli dev .",
+    "export": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.2/cli export . && deno run --allow-read=. --allow-write=out --allow-env=TRANSCRIPTS_BASE_PATH scripts/rebase-assets.ts",
+    "fixture": "node scripts/write-fixture.ts",
+    "test": "deno test -A --node-modules-dir=none test/"
+  },
+  "nodeModulesDir": "none",
+  "minimumDependencyAge": {
+    "exclude": ["jsr:@denext/denext", "jsr:@denext/content-collections"]
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "denext",
+    "lib": ["deno.window", "dom", "dom.iterable", "dom.asynciterable"]
+  },
+  "imports": {
+    "denext": "jsr:@denext/denext@^3.4.2",
+    "denext/jsx-runtime": "jsr:@denext/denext@^3.4.2/jsx-runtime",
+    "denext/jsx-dev-runtime": "jsr:@denext/denext@^3.4.2/jsx-dev-runtime",
+    "denext/server": "jsr:@denext/denext@^3.4.2/server",
+    "denext/client": "jsr:@denext/denext@^3.4.2/client",
+    "@denext/content-collections/markdown": "jsr:@denext/content-collections@^0.4.0/markdown",
+    "@std/assert": "jsr:@std/assert@^1.0.0",
+    "@std/path": "jsr:@std/path@^1.0.0"
+  },
+  "exclude": ["out/", ".denext/"]
+}

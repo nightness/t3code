@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "id": "demoTranscriptFixture0",
+  "title": "Add a healthz route",
+  "exportedAt": "2026-10-09T11:00:00.000Z",
+  "startedAt": "2026-10-09T10:00:00.000Z",
+  "endedAt": "2026-10-09T10:15:12.000Z",
+  "provider": "claudeAgent",
+  "models": ["claude-sonnet-4-5", "claude-opus-4-1"],
+  "prompt": "Add a /healthz route to the server and cover it with a test.",
+  "branch": "t3code/healthz-route",
+  "pullRequest": {
+    "url": "https://github.com/example/project/pull/42",
+    "number": 42,
+    "title": "Add a /healthz route",
+    "baseBranch": "main",
+    "headBranch": "t3code/healthz-route"
+  },
+  "toolsUsed": [
+    {
+      "name": "Shell",
+      "count": 4
+    },
+    {
+      "name": "Edit",
+      "count": 3
+    },
+    {
+      "name": "Read",
+      "count": 1
+    }
+  ],
+  "turns": [
+    {
+      "ordinal": 1,
+      "model": "claude-sonnet-4-5",
+      "status": "completed",
+      "startedAt": "2026-10-09T10:00:00.000Z",
+      "completedAt": "2026-10-09T10:05:12.000Z",
+      "durationMs": 312000,
+      "user": {
+        "text": "Add a /healthz route to the server and cover it with a test.",
+        "attachments": []
+      },
+      "entries": [
+        {
+          "kind": "reasoning",
+          "text": "The server routes live in apps/server/src/http.ts. I should read it first."
+        },
+        {
+          "kind": "command",
+          "command": "rg -n 'route' apps/server/src/http.ts",
+          "output": "42:  const routes = [\n57:  router.get('/api/status', status)",
+          "exitCode": 0,
+          "failed": false
+        },
+        {
+          "kind": "command",
+          "command": "cat .env",
+          "output": "[output withheld: the command reads a private file]",
+          "exitCode": 0,
+          "failed": false
+        },
+        {
+          "kind": "command",
+          "command": "env | grep TOKEN",
+          "output": "GITHUB_TOKEN=[redacted]\nANTHROPIC_API_KEY=[redacted]",
+          "exitCode": 0,
+          "failed": false
+        },
+        {
+          "kind": "tool",
+          "name": "Read",
+          "input": "{\n  \"file_path\": \"~/project/apps/server/src/http.ts\"\n}",
+          "output": "export function route() {}\n// aws [redacted]"
+        },
+        {
+          "kind": "file_change",
+          "path": "apps/server/src/http.ts",
+          "additions": 6,
+          "deletions": 0,
+          "diff": "@@ -55,0 +56,6 @@\n+router.get('/healthz', () =>\n+  Response.json({ ok: true }),\n+);\n",
+          "withheld": false
+        },
+        {
+          "kind": "file_change",
+          "path": ".env",
+          "additions": 1,
+          "deletions": 0,
+          "diff": null,
+          "withheld": true
+        },
+        {
+          "kind": "assistant",
+          "text": "Added `GET /healthz` returning `{ ok: true }`.\n\n- Route in `apps/server/src/http.ts`\n- Test pending"
+        }
+      ],
+      "usage": {
+        "inputTokens": 48200,
+        "cachedInputTokens": 31000,
+        "outputTokens": 2150,
+        "reasoningTokens": 640
+      },
+      "costUsd": 0.09315
+    },
+    {
+      "ordinal": 2,
+      "model": "claude-opus-4-1",
+      "status": "completed",
+      "startedAt": "2026-10-09T10:10:00.000Z",
+      "completedAt": "2026-10-09T10:15:12.000Z",
+      "durationMs": 312000,
+      "user": {
+        "text": "Now add the test. Use Bearer [redacted] if it needs auth.",
+        "attachments": []
+      },
+      "entries": [
+        {
+          "kind": "command",
+          "command": "pnpm vitest run http.test.ts",
+          "output": "FAIL http.test.ts > healthz\nExpected 200, received 404",
+          "exitCode": 1,
+          "failed": true
+        },
+        {
+          "kind": "file_change",
+          "path": "apps/server/src/http.test.ts",
+          "additions": 9,
+          "deletions": 0,
+          "diff": "@@ -0,0 +1,9 @@\n+it('answers /healthz', async () => {\n+  const response = await app.request('/healthz');\n+  expect(response.status).toBe(200);\n+});\n",
+          "withheld": false
+        },
+        {
+          "kind": "assistant",
+          "text": "The test passes now. `pnpm vitest run http.test.ts` → 1 passed."
+        }
+      ],
+      "usage": {
+        "inputTokens": 61900,
+        "cachedInputTokens": 47500,
+        "outputTokens": 1420,
+        "reasoningTokens": 0
+      },
+      "costUsd": 0.39375
+    }
+  ],
+  "totals": {
+    "inputTokens": 110100,
+    "cachedInputTokens": 78500,
+    "outputTokens": 3570,
+    "reasoningTokens": 640,
+    "turns": 2,
+    "toolCalls": 8,
+    "costUsd": 0.4869,
+    "durationMs": 912000
+  },
+  "redaction": {
+    "total": 6,
+    "byRule": {
+      "private-file": 2,
+      "github-token": 1,
+      "api-key": 1,
+      "aws-access-key": 1,
+      "authorization-header": 1
+    }
+  }
+}

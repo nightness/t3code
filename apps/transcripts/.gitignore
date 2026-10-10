@@ -1,0 +1,4 @@
+out/
+.denext/
+app/globals.css
+deno.lock
