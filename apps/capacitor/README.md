@@ -166,7 +166,7 @@ It is `mobile.icon` in `denext.config.ts`, with the background and splash colour
 the native icons and splash screens with:
 
 ```sh
-deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.4/cli mobile assets --platform ios
+deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.5/cli mobile assets --platform ios
 ```
 
 Drop `--platform ios` to write the Android launcher icons and splashes too.
