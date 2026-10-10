@@ -22,7 +22,7 @@ import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import { TestClock } from "effect/testing";
 import { ChildProcessSpawner } from "effect/process";
-import { expect } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 import type {
   ChangeRequest,
   GitActionProgressEvent,
@@ -68,6 +68,7 @@ import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.t
 import * as ProviderRegistry from "../provider/ProviderRegistry.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import * as GitManager from "./GitManager.ts";
+import * as SessionTranscriptPublisher from "../sessionTranscript/SessionTranscriptPublisher.ts";
 
 const encodeCliJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 const decodeForgejoPullRequest = Schema.decodeEffect(ForgejoPullRequestSchema);
@@ -395,6 +396,8 @@ function createTextGeneration(
 function createGitHubProviderWithFakeGh(scenario: FakeGhScenario = {}): {
   service: SourceControlProvider["Service"];
   ghCalls: string[];
+  /** Each `pr create` body, read from its body file before GitManager removes it. */
+  prBodies: string[];
 } {
   const prListQueue = [...(scenario.prListSequence ?? [])];
   const prListQueueByHeadSelector = new Map(
@@ -404,6 +407,7 @@ function createGitHubProviderWithFakeGh(scenario: FakeGhScenario = {}): {
     ]),
   );
   const ghCalls: string[] = [];
+  const prBodies: string[] = [];
 
   const fail = (cwd: string, detail: string, cause?: unknown, operation = "fakeGh") =>
     new SourceControlProviderFailure({ provider: "github", operation, cwd, detail, cause });
@@ -440,6 +444,8 @@ function createGitHubProviderWithFakeGh(scenario: FakeGhScenario = {}): {
     }
 
     if (args[0] === "pr" && args[1] === "create") {
+      const bodyFile = args[args.indexOf("--body-file") + 1];
+      if (bodyFile) prBodies.push(NodeFS.readFileSync(bodyFile, "utf8"));
       return Effect.succeed(
         fakeGhOutput(
           (scenario.createdPrUrl ?? "https://github.com/pingdotgg/codething-mvp/pull/101") + "\n",
@@ -655,6 +661,7 @@ function createGitHubProviderWithFakeGh(scenario: FakeGhScenario = {}): {
         }).pipe(Effect.asVoid),
     },
     ghCalls,
+    prBodies,
   };
 }
 
@@ -667,6 +674,8 @@ function runStackedAction(
     commitMessage?: string;
     featureBranch?: boolean;
     filePaths?: readonly string[];
+    threadId?: ThreadId;
+    sessionTranscript?: boolean;
   },
   options?: Parameters<GitManager.GitManager["Service"]["runStackedAction"]>[1],
 ) {
@@ -700,6 +709,7 @@ function makeManager(input?: {
   serverSettings?: Parameters<typeof ServerSettings.layerTest>[0];
   setupScriptRunner?: ProjectSetupScriptRunner.ProjectSetupScriptRunner["Service"];
   gitConfigReads?: string[];
+  transcriptPublisher?: SessionTranscriptPublisher.SessionTranscriptPublisher["Service"];
   /** Seeds the V2 stores the per-project settings lookup reads. */
   seed?: Effect.Effect<
     void,
@@ -707,9 +717,11 @@ function makeManager(input?: {
     ProjectionStore.ProjectionStoreV2 | ProjectStore.ProjectStoreV2
   >;
 }) {
-  const { service: fakeGitHubProvider, ghCalls } = createGitHubProviderWithFakeGh(
-    input?.ghScenario,
-  );
+  const {
+    service: fakeGitHubProvider,
+    ghCalls,
+    prBodies,
+  } = createGitHubProviderWithFakeGh(input?.ghScenario);
   const textGeneration = createTextGeneration(input?.textGeneration);
   const layerServerConfig = ServerConfig.layerTest(process.cwd(), {
     prefix: "t3-git-manager-test-",
@@ -769,6 +781,12 @@ function makeManager(input?: {
     ),
     layerVcsDriver,
     layerServerSettings,
+    input?.transcriptPublisher
+      ? Layer.succeed(
+          SessionTranscriptPublisher.SessionTranscriptPublisher,
+          input.transcriptPublisher,
+        )
+      : Layer.empty,
   ).pipe(Layer.provideMerge(layerSourceControlRegistry), Layer.provideMerge(NodeServices.layer));
   // Built into the test's scope: the manager reads these stores after this returns.
   const layerStores = Layer.merge(ProjectionStore.layer, ProjectStore.layer).pipe(
@@ -784,7 +802,7 @@ function makeManager(input?: {
       Effect.provide(layerManager),
       Effect.provideContext(stores),
     );
-    return { manager, ghCalls };
+    return { manager, ghCalls, prBodies };
   });
 }
 
@@ -4410,6 +4428,144 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
       expect(ghCalls.some((call) => call.startsWith("pr view "))).toBe(false);
     }),
   );
+
+  describe("session transcripts", () => {
+    const transcriptRepo = Effect.gen(function* () {
+      const repoDir = yield* makeTempDir("t3code-git-manager-transcript-");
+      yield* initRepo(repoDir);
+      yield* runGit(repoDir, ["checkout", "-b", "feature-transcript"]);
+      const remoteDir = yield* createBareRemote();
+      yield* runGit(repoDir, ["remote", "add", "origin", remoteDir]);
+      NodeFS.writeFileSync(NodePath.join(repoDir, "changes.txt"), "change\n");
+      yield* runGit(repoDir, ["add", "changes.txt"]);
+      yield* runGit(repoDir, ["commit", "-m", "Feature commit"]);
+      yield* runGit(repoDir, ["push", "-u", "origin", "feature-transcript"]);
+      yield* runGit(repoDir, ["config", "branch.feature-transcript.gh-merge-base", "main"]);
+      return repoDir;
+    });
+    const createdPrList = [
+      "[]",
+      JSON.stringify([
+        {
+          number: 88,
+          title: "Add a healthz route",
+          url: "https://github.com/pingdotgg/codething-mvp/pull/88",
+          baseRefName: "main",
+          headRefName: "feature-transcript",
+        },
+      ]),
+    ];
+    const textGeneration = {
+      generatePrContent: () =>
+        Effect.succeed({ title: "Add a healthz route", body: "## What changed\nA route." }),
+    };
+    const transcript = {
+      models: ["claude-sonnet-4-5"],
+      totals: { turns: 2, toolCalls: 8, inputTokens: 110_100, outputTokens: 3_570, costUsd: 0.49 },
+    } as unknown as SessionTranscriptPublisher.SessionTranscriptPublication["transcript"];
+    const transcriptUrl = "http://localhost:3773/transcripts/AAAAAAAAAAAAAAAAAAAAAA/";
+
+    it.effect("links the published transcript from the PR body when the user opts in", () =>
+      Effect.gen(function* () {
+        const repoDir = yield* transcriptRepo;
+        const calls: SessionTranscriptPublisher.SessionTranscriptPublishInput[] = [];
+        const republished = yield* Deferred.make<void>();
+        const { manager, prBodies } = yield* makeManager({
+          textGeneration,
+          ghScenario: { prListSequence: createdPrList },
+          transcriptPublisher: {
+            publish: (input) =>
+              Effect.sync(() => calls.push(input)).pipe(
+                Effect.tap(() =>
+                  input.id ? Deferred.succeed(republished, undefined) : Effect.void,
+                ),
+                Effect.as({ id: "AAAAAAAAAAAAAAAAAAAAAA", url: transcriptUrl, transcript }),
+              ),
+          },
+        });
+        const result = yield* runStackedAction(manager, {
+          cwd: repoDir,
+          action: "create_pr",
+          threadId: asThreadId("thread-transcript"),
+          sessionTranscript: true,
+        });
+
+        expect(result.pr.status).toBe("created");
+        expect(result.pr.sessionTranscriptUrl).toBe(transcriptUrl);
+        expect(prBodies).toHaveLength(1);
+        expect(prBodies[0]).toContain("## What changed\nA route.");
+        expect(prBodies[0]).toContain(`[Session transcript](${transcriptUrl})`);
+        expect(prBodies[0]).toContain("claude-sonnet-4-5 · 2 turns · 8 tool calls");
+        expect(calls[0]).toMatchObject({
+          threadId: "thread-transcript",
+          cwd: repoDir,
+          pullRequest: { url: null, number: null, title: "Add a healthz route" },
+        });
+        // Once the PR exists, the page is re-published under the same id, linking back to it.
+        yield* Deferred.await(republished).pipe(Effect.timeout("5 seconds"));
+        expect(calls[1]).toMatchObject({
+          id: "AAAAAAAAAAAAAAAAAAAAAA",
+          pullRequest: { url: "https://github.com/pingdotgg/codething-mvp/pull/88", number: 88 },
+        });
+      }),
+    );
+
+    it.effect("still creates the PR, without a link, when the transcript cannot be published", () =>
+      Effect.gen(function* () {
+        const repoDir = yield* transcriptRepo;
+        const { manager, prBodies } = yield* makeManager({
+          textGeneration,
+          ghScenario: { prListSequence: createdPrList },
+          transcriptPublisher: {
+            publish: () =>
+              Effect.fail(
+                new SessionTranscriptPublisher.SessionTranscriptError({
+                  operation: "render",
+                  detail: "deno not found",
+                }),
+              ),
+          },
+        });
+        const result = yield* runStackedAction(manager, {
+          cwd: repoDir,
+          action: "create_pr",
+          threadId: asThreadId("thread-transcript"),
+          sessionTranscript: true,
+        });
+
+        expect(result.pr.status).toBe("created");
+        expect(result.pr.number).toBe(88);
+        expect(result.pr.sessionTranscriptUrl).toBeUndefined();
+        expect(prBodies).toEqual(["## What changed\nA route."]);
+      }),
+    );
+
+    it.effect("publishes nothing unless the user opts in for that PR", () =>
+      Effect.gen(function* () {
+        const repoDir = yield* transcriptRepo;
+        let published = 0;
+        const { manager, prBodies } = yield* makeManager({
+          textGeneration,
+          ghScenario: { prListSequence: createdPrList },
+          transcriptPublisher: {
+            publish: () =>
+              Effect.sync(() => {
+                published += 1;
+              }).pipe(Effect.as({ id: "AAAAAAAAAAAAAAAAAAAAAA", url: transcriptUrl, transcript })),
+          },
+        });
+        const result = yield* runStackedAction(manager, {
+          cwd: repoDir,
+          action: "create_pr",
+          threadId: asThreadId("thread-transcript"),
+        });
+
+        expect(result.pr.status).toBe("created");
+        expect(published).toBe(0);
+        expect(prBodies).toEqual(["## What changed\nA route."]);
+      }),
+    );
+  });
 
   it.effect("generates PR content from branch changes when the remote base advances", () =>
     Effect.gen(function* () {

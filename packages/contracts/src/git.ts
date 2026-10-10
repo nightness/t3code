@@ -135,6 +135,11 @@ export const GitRunStackedActionInput = Schema.Struct({
   /** The thread the action runs beside; a pull request it creates is linked to it. */
   threadId: Schema.optional(ThreadId),
   projectId: Schema.optional(ProjectId),
+  /**
+   * Opt-in, per pull request: publish the thread's redacted session transcript and link it
+   * from the body of the pull request this action creates. Needs `threadId`.
+   */
+  sessionTranscript: Schema.optional(Schema.Boolean),
 });
 export type GitRunStackedActionInput = typeof GitRunStackedActionInput.Type;
 
@@ -350,6 +355,8 @@ export const GitRunStackedActionResult = Schema.Struct({
     baseBranch: Schema.optional(TrimmedNonEmptyStringSchema),
     headBranch: Schema.optional(TrimmedNonEmptyStringSchema),
     title: Schema.optional(TrimmedNonEmptyStringSchema),
+    /** The published session transcript the PR body links to, when one was requested. */
+    sessionTranscriptUrl: Schema.optional(Schema.String),
   }),
   toast: GitRunStackedActionToast,
 });

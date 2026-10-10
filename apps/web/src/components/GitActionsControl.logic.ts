@@ -21,6 +21,8 @@ export interface GitActionMenuItem {
   icon: GitActionIconName;
   kind: "open_dialog";
   dialogAction?: GitDialogAction;
+  /** Creates the PR with the thread's session transcript published and linked (opt-in). */
+  sessionTranscript?: true;
 }
 
 export interface GitQuickAction {
@@ -164,6 +166,7 @@ export function buildMenuItems(
   gitStatus: VcsStatusResult | null,
   isBusy: boolean,
   hasPrimaryRemote = true,
+  options: { readonly canAttachSessionTranscript?: boolean } = {},
 ): GitActionMenuItem[] {
   if (!gitStatus) return [];
   const terminology = resolveChangeRequestTerminology(gitStatus);
@@ -218,18 +221,27 @@ export function buildMenuItems(
     return [commitItem, pushItem];
   }
 
-  return [
-    commitItem,
-    pushItem,
-    {
-      id: "pr",
-      label: `Create ${terminology.shortLabel}`,
-      disabled: !canCreatePr,
-      icon: "pr",
-      kind: "open_dialog",
-      dialogAction: "create_pr",
-    },
-  ];
+  const prItem: GitActionMenuItem = {
+    id: "pr",
+    label: `Create ${terminology.shortLabel}`,
+    disabled: !canCreatePr,
+    icon: "pr",
+    kind: "open_dialog",
+    dialogAction: "create_pr",
+  };
+  // Opt-in per PR: only a thread the server knows has a session to publish.
+  return options.canAttachSessionTranscript
+    ? [
+        commitItem,
+        pushItem,
+        prItem,
+        {
+          ...prItem,
+          label: `Create ${terminology.shortLabel} with session transcript`,
+          sessionTranscript: true,
+        },
+      ]
+    : [commitItem, pushItem, prItem];
 }
 
 export function resolveQuickAction(

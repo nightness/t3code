@@ -336,6 +336,25 @@ describe("when: ref is clean, ahead, and has no open PR", () => {
       },
     ]);
   });
+
+  it("buildMenuItems offers a session-transcript PR only for a server thread", () => {
+    const withTranscript = buildMenuItems(status({ aheadCount: 2, pr: null }), false, true, {
+      canAttachSessionTranscript: true,
+    });
+    assert.deepEqual(withTranscript.at(-1), {
+      id: "pr",
+      label: "Create PR with session transcript",
+      disabled: false,
+      icon: "pr",
+      kind: "open_dialog",
+      dialogAction: "create_pr",
+      sessionTranscript: true,
+    });
+    const withoutTranscript = buildMenuItems(status({ aheadCount: 2, pr: null }), false, true, {
+      canAttachSessionTranscript: false,
+    });
+    assert.isFalse(withoutTranscript.some((item) => item.sessionTranscript));
+  });
 });
 
 describe("when: source control provider uses merge requests", () => {

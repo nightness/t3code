@@ -72,6 +72,8 @@ import * as DesktopBrowserChannel from "./preview/DesktopBrowserChannel.ts";
 import * as ServerBrowserStream from "./preview/ServerBrowserStream.ts";
 import * as PreviewBrowser from "./preview/PreviewBrowser.ts";
 import * as ProcessRunner from "./processRunner.ts";
+import * as SessionTranscriptHttp from "./sessionTranscript/http.ts";
+import * as SessionTranscriptPublisher from "./sessionTranscript/SessionTranscriptPublisher.ts";
 import * as GitManager from "./git/GitManager.ts";
 import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
@@ -357,6 +359,13 @@ const layerPullRequestService = PullRequestService.layer.pipe(
 );
 
 const layerGitManager = GitManager.layer.pipe(
+  // A PR the user opts in for links the thread's session transcript.
+  Layer.provide(
+    SessionTranscriptPublisher.layer.pipe(
+      Layer.provide(ProjectionStoreV2.layer),
+      Layer.provide(ProcessRunner.layer),
+    ),
+  ),
   // Per-project git settings resolve the acting thread's project.
   Layer.provide(Layer.merge(ProjectionStoreV2.layer, ProjectStore.layer)),
   Layer.provideMerge(RuntimeLayer.layerProjectSetupScriptRunner),
@@ -714,6 +723,7 @@ const layerMakeRoutes = Layer.mergeAll(
     ServerHttp.layerAssetRoute,
     ServerHttp.layerAttachmentUploadRoute,
     ServerHttp.layerMobileUiRoute,
+    SessionTranscriptHttp.layerSessionTranscriptRoute,
     DeviceHubProxy.layer,
     ServerBrowserStream.routeLayer,
     ServerHttp.layerStaticAndDevRoute,

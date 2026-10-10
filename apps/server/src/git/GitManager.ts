@@ -76,6 +76,8 @@ import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import * as ProjectStore from "../orchestration-v2/ProjectStore.ts";
 import * as ProjectSetupScriptRunner from "../project/ProjectSetupScriptRunner.ts";
 import * as ProviderRegistry from "../provider/ProviderRegistry.ts";
+import * as SessionTranscriptPublisher from "../sessionTranscript/SessionTranscriptPublisher.ts";
+import { sessionTranscriptPrBodySection } from "../sessionTranscript/sessionTranscriptSite.ts";
 import { extractBranchNameFromRemoteRef } from "./remoteRefs.ts";
 import { detachStackFrame } from "./detachStackFrame.ts";
 import * as ServerSettings from "../serverSettings.ts";
@@ -732,6 +734,10 @@ export const make = Effect.gen(function* () {
   const crypto = yield* Crypto.Crypto;
   const fileSystem = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
+  // Optional: a server without it (tests, a host that cannot render) creates PRs as before.
+  const transcriptPublisher = yield* Effect.serviceOption(
+    SessionTranscriptPublisher.SessionTranscriptPublisher,
+  );
 
   const sourceControlProvider = (cwd: string) => sourceControlProviders.resolve({ cwd });
   const serverSettingsService = yield* ServerSettings.ServerSettingsService;
@@ -2077,11 +2083,33 @@ export const make = Effect.gen(function* () {
     };
   });
 
+  /**
+   * Publishes the thread's session transcript for a PR the user opted in for. Best effort: a
+   * transcript that cannot be published leaves the PR without its link, never unmade.
+   */
+  const publishSessionTranscript = (
+    input: SessionTranscriptPublisher.SessionTranscriptPublishInput,
+  ): Effect.Effect<SessionTranscriptPublisher.SessionTranscriptPublication | null> =>
+    Option.match(transcriptPublisher, {
+      onNone: () =>
+        Effect.logWarning("Session transcript requested, but this server cannot publish one.").pipe(
+          Effect.as(null),
+        ),
+      onSome: (publisher) =>
+        publisher.publish(input).pipe(
+          Effect.tapError((error) =>
+            Effect.logWarning("Session transcript was not published.", error),
+          ),
+          Effect.orElseSucceed(() => null),
+        ),
+    });
+
   const runPrStep = Effect.fn("runPrStep")(function* (
     settings: SourceControlTextGenerationSettings,
     cwd: string,
     fallbackBranch: string | null,
     emit: GitActionProgressEmitter,
+    sessionTranscript: { readonly threadId: ThreadId } | null = null,
   ) {
     const provider = yield* sourceControlProvider(cwd);
     const terms = getChangeRequestTerminologyForKind(provider.kind);
@@ -2145,11 +2173,35 @@ export const make = Effect.gen(function* () {
       modelSelection: settings.modelSelection,
     });
 
+    const transcriptPullRequest = {
+      url: null,
+      number: null,
+      title: generated.title,
+      baseBranch,
+      headBranch: headContext.headBranch,
+    };
+    let transcript: SessionTranscriptPublisher.SessionTranscriptPublication | null = null;
+    if (sessionTranscript) {
+      yield* emit({
+        kind: "phase_started",
+        phase: "pr",
+        label: "Publishing session transcript...",
+      });
+      transcript = yield* publishSessionTranscript({
+        threadId: sessionTranscript.threadId,
+        cwd,
+        pullRequest: transcriptPullRequest,
+      });
+    }
+    const body = transcript
+      ? `${generated.body.trimEnd()}${sessionTranscriptPrBodySection(transcript.transcript, transcript.url)}`
+      : generated.body;
+
     const bodyFile = path.join(
       tempDir,
       `t3code-pr-body-${process.pid}-${yield* randomUUIDv4(cwd)}.md`,
     );
-    yield* fileSystem.writeFileString(bodyFile, generated.body).pipe(
+    yield* fileSystem.writeFileString(bodyFile, body).pipe(
       Effect.mapError(
         (cause) =>
           new GitManagerError({
@@ -2176,13 +2228,26 @@ export const make = Effect.gen(function* () {
       .pipe(Effect.ensuring(fileSystem.remove(bodyFile).pipe(Effect.ignore)));
 
     const created = yield* findOpenPr(cwd, headContext);
+    const transcriptResult = transcript ? { sessionTranscriptUrl: transcript.url } : {};
     if (!created) {
       return {
         status: "created" as const,
         baseBranch,
         headBranch: headContext.headBranch,
         title: generated.title,
+        ...transcriptResult,
       };
+    }
+
+    if (transcript && sessionTranscript) {
+      // The page now links back to the PR it was published for. Off the action's path:
+      // the PR exists and its body already links the page.
+      yield* publishSessionTranscript({
+        id: transcript.id,
+        threadId: sessionTranscript.threadId,
+        cwd,
+        pullRequest: { ...transcriptPullRequest, url: created.url, number: created.number },
+      }).pipe(Effect.forkDetach);
     }
 
     return {
@@ -2192,6 +2257,7 @@ export const make = Effect.gen(function* () {
       baseBranch: created.baseRefName,
       headBranch: created.headRefName,
       title: created.title,
+      ...transcriptResult,
     };
   });
 
@@ -2880,7 +2946,13 @@ export const make = Effect.gen(function* () {
               .pipe(
                 Effect.tap(() => Ref.set(currentPhase, Option.some("pr"))),
                 Effect.flatMap(() =>
-                  runPrStep(textGenerationSettings, input.cwd, currentBranch, progress.emit),
+                  runPrStep(
+                    textGenerationSettings,
+                    input.cwd,
+                    currentBranch,
+                    progress.emit,
+                    input.sessionTranscript && input.threadId ? { threadId: input.threadId } : null,
+                  ),
                 ),
               )
           : { status: "skipped_not_requested" as const };
