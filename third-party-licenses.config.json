@@ -578,6 +578,36 @@
         "licenseId": "MIT",
         "copyrights": ["Copyright (c) Sebastian Mayr"]
       }
+    },
+    {
+      "name": "@rollup/rollup-linux-x64-gnu",
+      "version": "4.44.0",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": [
+          "Copyright (c) 2017 [these people](https://github.com/rollup/rollup/graphs/contributors)"
+        ]
+      }
+    },
+    {
+      "name": "@rollup/rollup-darwin-x64",
+      "version": "4.44.0",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": [
+          "Copyright (c) 2017 [these people](https://github.com/rollup/rollup/graphs/contributors)"
+        ]
+      }
+    },
+    {
+      "name": "@rollup/rollup-darwin-arm64",
+      "version": "4.44.0",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": [
+          "Copyright (c) 2017 [these people](https://github.com/rollup/rollup/graphs/contributors)"
+        ]
+      }
     }
   ]
 }
