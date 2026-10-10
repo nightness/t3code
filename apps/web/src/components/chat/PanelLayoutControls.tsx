@@ -4,6 +4,7 @@ import { MorphIcon } from "~/components/MorphIcon";
 import { memo, type ReactElement } from "react";
 
 import type { ThreadPanelPresentation } from "../../rightPanelLayout";
+import { usePhoneThreadChrome } from "../phoneThreadChrome";
 import { PopoverCreateHandle, PopoverTrigger } from "../ui/popover";
 import { Toggle } from "../ui/toggle";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -47,6 +48,8 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
   onToggleThreadPanel,
   onToggleRightPanel,
 }: PanelLayoutControlsProps) {
+  // A thread on the phone stack has apps/mobile's header, which carries no right-panel toggle.
+  const phoneThread = usePhoneThreadChrome();
   const threadPanelToggle = (
     <Toggle
       className="relative shrink-0 [-webkit-app-region:no-drag]"
@@ -105,7 +108,7 @@ export const PanelLayoutControls = memo(function PanelLayoutControls({
           </TooltipPopup>
         </Tooltip>
       ) : null}
-      {showRightPanelControl ? (
+      {showRightPanelControl && !phoneThread ? (
         <Tooltip>
           <TooltipTrigger render={<span className="flex shrink-0" />}>
             <Toggle

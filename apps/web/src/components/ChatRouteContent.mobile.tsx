@@ -15,6 +15,7 @@ import { resolveThreadRouteTarget, type ThreadRouteTarget } from "../threadRoute
 import LegacyThreadSidebar from "./LegacySidebar";
 import { PHONE_STACK_PATHS, phoneStackKey } from "./phoneStack.logic";
 import { PhoneStackView } from "./phoneStackView";
+import { PhoneThreadChromeContext } from "./phoneThreadChrome";
 import { PhoneHomeChromeContext } from "./sidebar/phoneHomeChrome";
 import ThreadSidebar from "./Sidebar";
 import { ThreadRouteView } from "./ThreadRouteView";
@@ -77,10 +78,10 @@ function PhoneBackButton() {
 function PhoneThread(props: { readonly target: ThreadRouteTarget | null }) {
   if (!props.target) return null;
   return (
-    <>
+    <PhoneThreadChromeContext value>
       <ThreadRouteView target={props.target} />
       <PhoneBackButton />
-    </>
+    </PhoneThreadChromeContext>
   );
 }
 
