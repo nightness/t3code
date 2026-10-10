@@ -168,3 +168,22 @@ html[data-phone-parity][data-phone-platform="android"]
   [data-slot="sidebar-content"] {
   padding-bottom: 152px;
 }
+
+/* The phone Home's list is one native scroller, as apps/mobile's (HomeScreen.tsx: a vertical
+   list that bounces even when its rows fit, React Native's alwaysBounceVertical default).
+   The scroll area's edge-fade mask is dropped: a mask on an iOS WebKit overflow scroller
+   takes it off the compositor's async touch scrolling, and apps/mobile's list has no fade.
+   Its content is at least one pixel taller than the viewport, so a drag always moves the list
+   (and rubber-bands) however few rows there are. The bottom padding above keeps the last row
+   clear of the floating toolbar. */
+html[data-phone-parity] [data-phone-home] [data-slot="scroll-area-viewport"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+html[data-phone-parity] [data-phone-home] [data-slot="sidebar-content"] {
+  min-height: calc(100% + 1px);
+}

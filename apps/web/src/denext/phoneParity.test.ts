@@ -99,4 +99,19 @@ describe("phone parity", () => {
       /\[data-phone-platform="android"\]\s+\[data-phone-home\]\s+li\[data-thread-item\]::after\s*\{\s*content: none;/,
     );
   });
+
+  it("keeps the phone Home's list one touch scroller that always moves under a drag", () => {
+    const viewport =
+      /\[data-phone-home\]\s+\[data-slot="scroll-area-viewport"\]\s*\{([^}]*)\}/.exec(css)?.[1] ??
+      "";
+    // No mask on the scroller (it breaks iOS WebKit's async touch scrolling), scrolls on y.
+    expect(viewport).toMatch(/mask-image:\s*none/);
+    expect(viewport).toMatch(/overflow-y:\s*auto/);
+    expect(viewport).toMatch(/touch-action:\s*pan-y/);
+    const content =
+      /\[data-phone-home\]\s+\[data-slot="sidebar-content"\]\s*\{([^}]*min-height[^}]*)\}/.exec(
+        css,
+      )?.[1] ?? "";
+    expect(content).toMatch(/min-height:\s*calc\(100% \+ 1px\)/);
+  });
 });
