@@ -19,6 +19,11 @@ import { SettingsScopeNotice } from "../components/settings/SettingsScopeNotice"
 import { SETTINGS_DEVICE_ONLY_PATHS } from "../components/settings/SettingsScopeSentence";
 import { SettingsPageContainer } from "../components/settings/settingsLayout";
 import {
+  PhoneSettingsLayout,
+  shouldRedirectSettingsIndex,
+  usePhoneSettings,
+} from "../components/settings/phoneSettings";
+import {
   retainSettingsScope,
   validateSettingsRouteSearch,
 } from "../components/settings/settingsScopeNavigation";
@@ -28,8 +33,28 @@ import {
   isSettingsSearchScopeAvailable,
 } from "../components/settings/settingsSearch";
 
-function RestoreDeviceDefaultsButton({ onRestored }: { onRestored: () => void }) {
+function RestoreDeviceDefaultsButton({
+  onRestored,
+  iconOnly = false,
+}: {
+  onRestored: () => void;
+  /** In the phone's header, beside the page title, the icon alone carries it. */
+  iconOnly?: boolean;
+}) {
   const { changedSettingLabels, restoreDefaults } = useSettingsRestore(onRestored);
+  if (iconOnly) {
+    return (
+      <Button
+        aria-label="Restore device defaults"
+        size="icon"
+        variant="ghost"
+        disabled={changedSettingLabels.length === 0}
+        onClick={() => void restoreDefaults()}
+      >
+        <RotateCcwIcon className="size-4" />
+      </Button>
+    );
+  }
   return (
     <Button
       size="xs"
@@ -116,6 +141,31 @@ function SettingsContentLayout() {
   useEscapeToGoBack(navigateToMainApp);
   const { search } = useSettingsScope();
   const [restoreSignal, setRestoreSignal] = useState(0);
+  const phoneSettings = usePhoneSettings();
+  const page = (
+    <div
+      key={`${JSON.stringify(search)}:${restoreSignal}`}
+      className="min-h-0 flex flex-1 flex-col"
+    >
+      <SettingsScopeBoundary pathname={location.pathname}>
+        <Outlet />
+      </SettingsScopeBoundary>
+    </div>
+  );
+
+  if (phoneSettings) {
+    return (
+      <PhoneSettingsLayout
+        page={page}
+        generalAction={
+          <RestoreDeviceDefaultsButton
+            iconOnly
+            onRestored={() => setRestoreSignal((value) => value + 1)}
+          />
+        }
+      />
+    );
+  }
 
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none isolate">
@@ -133,14 +183,7 @@ function SettingsContentLayout() {
           </div>
         </WorkspacePageHeader>
 
-        <div
-          key={`${JSON.stringify(search)}:${restoreSignal}`}
-          className="min-h-0 flex flex-1 flex-col"
-        >
-          <SettingsScopeBoundary pathname={location.pathname}>
-            <Outlet />
-          </SettingsScopeBoundary>
-        </div>
+        {page}
       </div>
     </SidebarInset>
   );
@@ -185,7 +228,7 @@ export const Route = createFileRoute("/settings")({
       throw redirect({ to: "/pair", replace: true });
     }
 
-    if (location.pathname === "/settings") {
+    if (location.pathname === "/settings" && shouldRedirectSettingsIndex()) {
       throw redirect({ to: "/settings/general", replace: true });
     }
   },

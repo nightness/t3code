@@ -21,15 +21,21 @@ export const PHONE_STACK_STYLE = {
 export function PhoneStackView(props: {
   readonly history: HistorySource;
   readonly screens: readonly HistoryScreen[];
-  readonly getKey: (href: string) => string;
+  /** Two locations with one key are one screen (default: the pathname). */
+  readonly getKey?: (href: string) => string;
+  /** The stack's root path (default `/`); locations outside it leave the stack as it is. */
+  readonly base?: string;
+  /** Extra style (e.g. the header's `--dnx-header-*` theme), over {@link PHONE_STACK_STYLE}. */
+  readonly style?: Readonly<Record<string, string>>;
 }): ReactNode {
   return (
     <HistoryStack
       history={props.history}
       screens={props.screens}
-      getKey={props.getKey}
+      {...(props.getKey ? { getKey: props.getKey } : {})}
+      {...(props.base ? { base: props.base } : {})}
       screenOptions={SCREEN_OPTIONS}
-      style={PHONE_STACK_STYLE}
+      style={props.style ? { ...PHONE_STACK_STYLE, ...props.style } : PHONE_STACK_STYLE}
     />
   );
 }

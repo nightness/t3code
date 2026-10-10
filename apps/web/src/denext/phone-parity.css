@@ -145,3 +145,11 @@ html[data-phone-parity]
   > span {
   font-weight: 400;
 }
+
+/* A stack header's back button is the chevron alone, as apps/mobile's
+   headerBackButtonDisplayMode: "minimal" (Stack.tsx); its accessible name
+   stays the screen below's title. Only the phone Settings stack draws
+   denext/navigation's header (components/settings/phoneSettings.mobile.tsx). */
+html[data-phone-parity] [data-dnx-back] > span:last-child {
+  display: none;
+}
