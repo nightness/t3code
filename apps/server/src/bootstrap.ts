@@ -63,13 +63,50 @@ export class BootstrapEnvelopeDecodeError extends Schema.TaggedError<BootstrapEn
   }
 }
 
+export class BootstrapInProcessDecodeError extends Schema.TaggedError<BootstrapInProcessDecodeError>()(
+  "BootstrapInProcessDecodeError",
+  {
+    cause: Schema.Defect(),
+  },
+) {
+  override get message(): string {
+    return "Failed to decode the bootstrap envelope handed over in process.";
+  }
+}
+
 export const BootstrapError = Schema.Union([
   BootstrapFdStatError,
   BootstrapInputStreamOpenError,
   BootstrapEnvelopeReadError,
   BootstrapEnvelopeDecodeError,
+  BootstrapInProcessDecodeError,
 ]);
 export type BootstrapError = typeof BootstrapError.Type;
+
+/**
+ * The bootstrap envelope of a host that runs the server inside its own
+ * runtime (the Deno Desktop app's sidecar worker) and so has no file
+ * descriptor to write it to. It carries what the fd envelope carries.
+ */
+let inProcessBootstrapEnvelope: unknown = undefined;
+
+/** Hand the server its bootstrap envelope in process, before it starts. */
+export const provideInProcessBootstrapEnvelope = (envelope: unknown): void => {
+  inProcessBootstrapEnvelope = envelope;
+};
+
+/** The envelope given to {@link provideInProcessBootstrapEnvelope}, if any. */
+export const readInProcessBootstrapEnvelope = Effect.fn("readInProcessBootstrapEnvelope")(
+  function* <A, I>(
+    schema: Schema.Codec<A, I>,
+  ): Effect.fn.Return<Option.Option<A>, BootstrapInProcessDecodeError> {
+    if (inProcessBootstrapEnvelope === undefined) return Option.none();
+    const decoded = yield* Schema.decodeUnknownEffect(schema)(inProcessBootstrapEnvelope).pipe(
+      Effect.mapError((cause) => new BootstrapInProcessDecodeError({ cause })),
+    );
+    return Option.some(decoded);
+  },
+);
 
 export const readBootstrapEnvelope = Effect.fn("readBootstrapEnvelope")(function* <A, I>(
   schema: Schema.Codec<A, I>,

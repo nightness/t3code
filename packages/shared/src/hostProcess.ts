@@ -2,7 +2,6 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as NodeDns from "node:dns";
 import * as NodeOS from "node:os";
-import * as NodeSea from "node:sea";
 
 export const HostProcessPlatform = Context.Reference<NodeJS.Platform>(
   "@t3tools/shared/hostProcess/HostProcessPlatform",
@@ -74,9 +73,28 @@ export const HostProcessInvokedAs = Context.Reference<string>(
 export const HostProcessIsExecutable = Context.Reference<boolean>(
   "@t3tools/shared/hostProcess/HostProcessIsExecutable",
   {
-    defaultValue: () => NodeSea.isSea(),
+    defaultValue: () => isSingleExecutable(),
   },
 );
+
+/**
+ * `node:sea`'s `isSea()`, looked up at run time rather than imported: a
+ * runtime without the module (Deno, which runs the server inside a desktop
+ * app) would otherwise fail to load this file at all. Such a runtime is never
+ * a Node single-executable.
+ */
+export function isSingleExecutable(
+  getBuiltinModule: ((id: string) => unknown) | undefined = process.getBuiltinModule,
+): boolean {
+  try {
+    const sea = getBuiltinModule?.call(process, "node:sea") as
+      | { readonly isSea?: () => boolean }
+      | undefined;
+    return sea?.isSea?.() === true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Every IP address this machine answers to: the interface addresses, plus

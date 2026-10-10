@@ -26,6 +26,8 @@
       "entry": [
         "src/bin.ts!",
         "src/claude-history-worker.ts!",
+        // The Deno Desktop build's in-process server (apps/web `desktop.sidecars`).
+        "src/desktop-sidecar.ts!",
         "scripts/cli.ts",
         "scripts/evaluate-thread-titles.ts",
         "scripts/measure-pr-preview.ts",

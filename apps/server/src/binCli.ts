@@ -1,10 +1,12 @@
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Effect from "effect/Effect";
+import { identity } from "effect/Function";
 import * as Layer from "effect/Layer";
 import { Argument, Command } from "effect/cli";
 import * as CliError from "effect/cli/CliError";
 
+import { HostProcessExecutablePath } from "@t3tools/shared/hostProcess";
 import * as NetService from "@t3tools/shared/Net";
 import packageJson from "../package.json" with { type: "json" };
 import { acpMcpBridgeCommand, acpMcpCallCommand } from "./cli/acpMcpBridge.ts";
@@ -91,10 +93,20 @@ export const makeCli = ({ cloudEnabled = hasCloudPublicConfig } = {}) =>
 
 export const cli = makeCli();
 
-export function runCli() {
+export function runCli(options?: {
+  /**
+   * The runtime children spawn to run this install's CLI, when it is not
+   * `process.execPath` (a host that runs the server inside its own binary).
+   */
+  readonly hostExecutablePath?: string;
+}) {
+  const hostExecutablePath = options?.hostExecutablePath;
   Command.run(cli, { version: packageJson.version }).pipe(
     Effect.scoped,
     Effect.provide(layerCliRuntime),
+    hostExecutablePath === undefined
+      ? identity
+      : Effect.provideService(HostProcessExecutablePath, hostExecutablePath),
     NodeRuntime.runMain,
   );
 }

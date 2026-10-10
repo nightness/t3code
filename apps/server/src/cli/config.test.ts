@@ -20,6 +20,7 @@ import * as NetService from "@t3tools/shared/Net";
 import { DEFAULT_SIGNAL_EXPORT } from "@t3tools/shared/observability";
 import * as OtelEnvironment from "@t3tools/shared/otelEnvironment";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { provideInProcessBootstrapEnvelope } from "../bootstrap.ts";
 import { deriveServerPaths } from "../config.ts";
 import { resolveServerConfig } from "./config.ts";
 
@@ -512,6 +513,65 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
       assert.equal(join(baseDir, "userdata"), resolved.stateDir);
       assert.equal(resolved.desktopTelemetryFd, 4);
       assert.equal(resolved.desktopTelemetryControlFd, 5);
+    }),
+  );
+
+  it.effect("reads the bootstrap envelope a host handed over in process", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const t3Home = yield* fs.makeTempDirectoryScoped({ prefix: "t3-cli-in-process-" });
+      provideInProcessBootstrapEnvelope(
+        makeDesktopBootstrap({
+          port: 4999,
+          t3Home,
+          desktopBootstrapToken: "sidecar-token",
+          desktopBootstrapSecret: "sidecar-secret",
+        }),
+      );
+      // No flags or variables: everything comes from the envelope.
+      const resolve = (baseDir: Option.Option<string>) =>
+        resolveServerConfig(
+          { ...minimalWebFlags(t3Home), mode: Option.none(), port: Option.none(), baseDir },
+          Option.none(),
+        ).pipe(
+          Effect.provide(
+            Layer.merge(
+              NetService.layer,
+              ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} })),
+            ),
+          ),
+        );
+      const resolved = yield* resolve(Option.none()).pipe(
+        Effect.ensuring(Effect.sync(() => provideInProcessBootstrapEnvelope(undefined))),
+      );
+      expect(resolved.mode).toBe("desktop");
+      expect(resolved.port).toBe(4999);
+      expect(resolved.host).toBe("127.0.0.1");
+      expect(resolved.noBrowser).toBe(true);
+      expect(resolved.baseDir).toBe(t3Home);
+      expect(resolved.desktopBootstrapToken).toBe("sidecar-token");
+      expect(resolved.desktopBootstrapSecret).toBe("sidecar-secret");
+
+      // Without one, nothing is read: a plain launch keeps its web defaults.
+      const plain = yield* resolve(Option.some(t3Home));
+      expect(plain.mode).toBe("web");
+      expect(plain.desktopBootstrapToken).toBeUndefined();
+    }),
+  );
+
+  it.effect("rejects an in-process bootstrap envelope that does not decode", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const t3Home = yield* fs.makeTempDirectoryScoped({ prefix: "t3-cli-in-process-bad-" });
+      provideInProcessBootstrapEnvelope({ mode: "desktop", port: "not a port" });
+      const error = yield* resolveServerConfig(minimalWebFlags(t3Home), Option.none()).pipe(
+        Effect.provide(
+          Layer.merge(NetService.layer, ConfigProvider.layer(ConfigProvider.fromEnv({ env: {} }))),
+        ),
+        Effect.ensuring(Effect.sync(() => provideInProcessBootstrapEnvelope(undefined))),
+        Effect.flip,
+      );
+      expect(error._tag).toBe("BootstrapInProcessDecodeError");
     }),
   );
 

@@ -21,7 +21,7 @@ import * as SchemaTransformation from "effect/SchemaTransformation";
 import { Argument, Flag } from "effect/cli";
 import * as CliError from "effect/cli/CliError";
 
-import { readBootstrapEnvelope } from "../bootstrap.ts";
+import { readBootstrapEnvelope, readInProcessBootstrapEnvelope } from "../bootstrap.ts";
 import * as ServerConfig from "../config.ts";
 import { expandHomePath, resolveBaseDir } from "../os-jank.ts";
 import { isProcessAlive, readPersistedServerRuntimeState } from "../serverRuntimeState.ts";
@@ -287,7 +287,7 @@ export const resolveServerConfig = (
     const bootstrapEnvelope =
       bootstrapFd !== undefined
         ? yield* readBootstrapEnvelope(DesktopBackendBootstrap, bootstrapFd)
-        : Option.none();
+        : yield* readInProcessBootstrapEnvelope(DesktopBackendBootstrap);
     const bootstrap = Option.getOrUndefined(bootstrapEnvelope);
 
     const mode: ServerConfig.RuntimeMode = Option.getOrElse(
