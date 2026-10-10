@@ -11,6 +11,7 @@
 import dmSansBold from "./fonts/DMSans-Bold.woff2?url";
 import dmSansMedium from "./fonts/DMSans-Medium.woff2?url";
 import dmSansRegular from "./fonts/DMSans-Regular.woff2?url";
+import { PHONE_PLATFORM } from "./phonePlatform";
 
 /** apps/mobile's DM Sans faces: DMSans-Regular (400), DMSans-Medium (500), DMSans-Bold (700). */
 const DM_SANS_FACES: ReadonlyArray<{ readonly weight: string; readonly url: string }> = [
@@ -21,6 +22,7 @@ const DM_SANS_FACES: ReadonlyArray<{ readonly weight: string; readonly url: stri
 
 if (typeof document !== "undefined") {
   document.documentElement.dataset.phoneParity = "";
+  document.documentElement.dataset.phonePlatform = PHONE_PLATFORM;
   if (typeof FontFace !== "undefined" && document.fonts) {
     for (const { weight, url } of DM_SANS_FACES) {
       const face = new FontFace("DM Sans", `url(${url}) format("woff2")`, {

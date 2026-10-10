@@ -28,9 +28,10 @@ describe("phone parity", () => {
       .filter((selector) => selector.length > 0);
     expect(selectors.length).toBeGreaterThan(0);
     for (const selector of selectors) {
-      expect(
-        selector === "html[data-phone-parity]" || selector.startsWith("html[data-phone-parity] "),
-      ).toBe(true);
+      // The root, a descendant of it, or the root narrowed to one phone platform.
+      expect(selector).toMatch(
+        /^html\[data-phone-parity\](\[data-phone-platform="(ios|android)"\])?( |$)/,
+      );
     }
   });
 
@@ -61,6 +62,8 @@ describe("phone parity", () => {
     expect(added).toEqual([]);
     await import("./phoneParity.mobile");
     expect(dataset.phoneParity).toBe("");
+    // The iOS export (phonePlatform.ts); the Android export resolves phonePlatform.android.ts.
+    expect(dataset.phonePlatform).toBe("ios");
     // apps/mobile's three DM Sans weights (app.config.ts: 400Regular, 500Medium, 700Bold).
     expect(added.map((face) => [face.family, face.descriptors.weight])).toEqual([
       ["DM Sans", "400"],
@@ -80,5 +83,20 @@ describe("phone parity", () => {
     // The head is one string literal, its line breaks spelled `\n`.
     const bodyRule = /\\n\s*body \{([^}]*)\}/.exec(config)?.[1] ?? "";
     expect(bodyRule).toContain(`font-family: var(--font-sans, ${DEFAULT_SANS_FONT_STACK});`);
+  });
+
+  it("marks each phone export with its platform", async () => {
+    const ios = await import("./phonePlatform");
+    const android = await import("./phonePlatform.android");
+    expect([ios.PHONE_PLATFORM, android.PHONE_PLATFORM]).toEqual(["ios", "android"]);
+  });
+
+  it("insets the iOS phone Home rows with a hairline and leaves Android's flat", () => {
+    expect(css).toMatch(
+      /\[data-phone-home\]\s+li\[data-thread-item\]::after\s*\{[^}]*height: 1px;/,
+    );
+    expect(css).toMatch(
+      /\[data-phone-platform="android"\]\s+\[data-phone-home\]\s+li\[data-thread-item\]::after\s*\{\s*content: none;/,
+    );
   });
 });

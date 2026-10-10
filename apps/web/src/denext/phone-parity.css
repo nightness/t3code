@@ -55,3 +55,93 @@ html[data-phone-parity] [data-phone-home-brand] {
   font-size: 21px;
   letter-spacing: -0.5px;
 }
+
+/* The phone Home's thread rows: apps/mobile's flat list rows
+   (features/threads/thread-list-v2-items.tsx, the non-sidebar-pane branch).
+   Content box px-5 py-2.5 on iOS, px-3 py-2.5 on Android
+   (thread-list-v2-row-appearance.ts / .android.ts); the list keeps its 8 px
+   inset, so the row pads the rest. Head line: project name text-sm 14/19
+   font-t3-medium, the time text-xs 13/17. Title: mt-1, text-base 16/23,
+   font-t3-medium, text-foreground, at most two lines. Meta line (branch, PR,
+   provider icon at the trailing edge): mt-1, text-xs 13/17. Rows touch; on
+   iOS an inset hairline (ml-5 h-px bg-border-subtle, border-subtle being the
+   border colour at 70%) separates them, Android draws none. Background work
+   (working, waiting) recedes to regular weight at 55% opacity
+   (thread-row-emphasis.ts). One-line row: 10 + 19 + 4 + 23 + 4 + 14 + 10 =
+   84 px, plus the 1 px hairline on iOS. */
+html[data-phone-parity] [data-phone-home] ul:has(> li[data-thread-item]) {
+  gap: 0;
+}
+html[data-phone-parity] [data-phone-home] li[data-thread-item] {
+  padding-block: 0;
+  contain-intrinsic-size: auto 85px;
+}
+html[data-phone-parity] [data-phone-home] li[data-thread-item]::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-left: 12px;
+  margin-right: -8px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+}
+html[data-phone-parity][data-phone-platform="android"]
+  [data-phone-home]
+  li[data-thread-item]::after {
+  content: none;
+}
+html[data-phone-parity] [data-phone-home] [data-testid="sidebar-row-card"] {
+  border-radius: 0;
+  opacity: 1;
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-content] {
+  height: auto;
+  padding: 10px 12px;
+}
+html[data-phone-parity][data-phone-platform="android"] [data-phone-home] [data-thread-row-content] {
+  padding: 10px 4px;
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-head] {
+  height: auto;
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-project] {
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 500;
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-status] {
+  height: auto;
+  font-size: 13px;
+  line-height: 17px;
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-title] {
+  margin-top: 4px;
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-title] > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+  font-size: 16px;
+  line-height: 23px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+html[data-phone-parity] [data-phone-home] [data-thread-row-meta] {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 17px;
+}
+html[data-phone-parity]
+  [data-phone-home]
+  li:is([data-thread-status="working"], [data-thread-status="waiting"])
+  [data-thread-row-content] {
+  opacity: 0.55;
+}
+html[data-phone-parity]
+  [data-phone-home]
+  li:is([data-thread-status="working"], [data-thread-status="waiting"])
+  [data-thread-row-title]
+  > span {
+  font-weight: 400;
+}

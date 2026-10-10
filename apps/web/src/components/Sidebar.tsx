@@ -1996,6 +1996,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
   return (
     <li
       data-thread-item={threadKey}
+      data-thread-status={status}
       {...sortableRootProps}
       {...(fileDropHandlers ?? {})}
       className={cn(
@@ -2026,14 +2027,18 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
             }
           >
             {accessibleTitle}
-            <div className="relative z-10 h-[4.875rem] px-(--sidebar-row-content-inset) py-(--sidebar-content-inset)">
-              <div className="flex h-5 min-w-0 items-center gap-1.5">
+            <div
+              data-thread-row-content=""
+              className="relative z-10 h-[4.875rem] px-(--sidebar-row-content-inset) py-(--sidebar-content-inset)"
+            >
+              <div data-thread-row-head="" className="flex h-5 min-w-0 items-center gap-1.5">
                 {draftIndicator}
                 {props.project ? (
                   <ProjectFavicon project={props.project} className="size-4 shrink-0" />
                 ) : null}
                 {props.projectDisplayName ? (
                   <span
+                    data-thread-row-project=""
                     className={cn(
                       "min-w-0 flex-1 truncate text-secondary-label text-xs",
                       shouldRecede ? "font-normal" : "font-medium",
@@ -2053,6 +2058,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
                   dragDestination
                 ) : (
                   <span
+                    data-thread-row-status=""
                     className={cn(
                       "group/sidebar-status-slot relative ml-auto flex h-5 min-w-8 shrink-0 items-stretch justify-end text-xs",
                       props.sweepAction !== null && "hidden",
@@ -2189,7 +2195,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
                   release click still fires and is consumed. */}
                 {props.sweepAction !== null ? dragDestination : null}
               </div>
-              <div className="mt-1 flex min-w-0">
+              <div data-thread-row-title="" className="mt-1 flex min-w-0">
                 {title}
                 {isRegeneratingTitle ? (
                   <span role="status" className="sr-only">
@@ -2197,7 +2203,10 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
                   </span>
                 ) : null}
               </div>
-              <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-secondary-label text-xs">
+              <div
+                data-thread-row-meta=""
+                className="mt-0.5 flex min-w-0 items-center gap-1.5 text-secondary-label text-xs"
+              >
                 {/* Always the branch. The plan step used to take this slot while
                   working, but it truncated to a half-sentence and dropped the
                   branch, so the row lost its most stable identifier. */}
