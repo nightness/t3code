@@ -116,3 +116,22 @@ export function prepareDesktopSidecarProcess(
   for (const name of DESKTOP_SIDECAR_SCRUBBED_ENV_NAMES) delete proc.env[name];
   if (proc.argv.length <= 2) proc.argv = [...proc.argv.slice(0, 2), homeDirectory];
 }
+
+/**
+ * Hide the worker's `location`, as Node's main thread has none. denext runs the
+ * sidecar in a Deno worker started from a `blob:` URL, whose `location` has the
+ * origin `"null"` and the path `"null/<uuid>"`. Effect's `Url.make` resolves
+ * every HttpClient URL against `location.origin + location.pathname` whenever a
+ * `location` exists, so each request (PostHog's `/batch/` included) failed with
+ * "Invalid URL ... with base 'nullnull/<uuid>'".
+ */
+export function hideWorkerLocation(
+  scope: { location?: unknown } = globalThis as { location?: unknown },
+): void {
+  if (scope.location === undefined) return;
+  Object.defineProperty(scope, "location", {
+    value: undefined,
+    configurable: true,
+    writable: true,
+  });
+}
