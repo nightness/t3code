@@ -154,7 +154,6 @@ interface PendingDefaultBranchAction {
   commitMessage?: string;
   onConfirmed?: () => void;
   filePaths?: string[];
-  sessionTranscript?: boolean;
 }
 
 type PublishProviderKind = Extract<
@@ -172,8 +171,6 @@ interface RunGitActionWithToastInput {
   statusOverride?: VcsStatusResult | null;
   featureBranch?: boolean;
   filePaths?: string[];
-  /** Publish the thread's session transcript and link it from the PR (opt-in, per PR). */
-  sessionTranscript?: boolean;
 }
 
 interface InlineGitActionSuccess {
@@ -1267,13 +1264,9 @@ export default function GitActionsControl({
     return gitStatusForActions?.isDefaultRef ?? false;
   }, [gitStatusForActions?.isDefaultRef]);
 
-  const hasServerThread = activeServerThread !== null;
   const gitActionMenuItems = useMemo(
-    () =>
-      buildMenuItems(gitStatusForActions, isGitActionRunning, hasPrimaryRemote, {
-        canAttachSessionTranscript: hasServerThread,
-      }),
-    [gitStatusForActions, hasPrimaryRemote, hasServerThread, isGitActionRunning],
+    () => buildMenuItems(gitStatusForActions, isGitActionRunning, hasPrimaryRemote),
+    [gitStatusForActions, hasPrimaryRemote, isGitActionRunning],
   );
   const quickAction = useMemo(
     () =>
@@ -1337,7 +1330,6 @@ export default function GitActionsControl({
       statusOverride,
       featureBranch = false,
       filePaths,
-      sessionTranscript = false,
     }: RunGitActionWithToastInput) => {
       if (
         activeEnvironmentId === null ||
@@ -1375,7 +1367,6 @@ export default function GitActionsControl({
           ...(commitMessage ? { commitMessage } : {}),
           ...(onConfirmed ? { onConfirmed } : {}),
           ...(filePaths ? { filePaths } : {}),
-          ...(sessionTranscript ? { sessionTranscript } : {}),
         });
         return;
       }
@@ -1395,7 +1386,6 @@ export default function GitActionsControl({
         // have no server thread yet, so there is nothing to link to.
         ...(activeServerThread ? { threadId: activeServerThread.id } : {}),
         ...(activeDraftThread ? { projectId: activeDraftThread.projectId } : {}),
-        ...(sessionTranscript && activeServerThread ? { sessionTranscript: true } : {}),
       });
 
       if (result._tag === "Failure") {
@@ -1492,15 +1482,13 @@ export default function GitActionsControl({
 
   const continuePendingDefaultBranchAction = () => {
     if (!pendingDefaultBranchAction) return;
-    const { action, commitMessage, onConfirmed, filePaths, sessionTranscript } =
-      pendingDefaultBranchAction;
+    const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
     setPendingDefaultBranchAction(null);
     void runGitActionWithToast({
       action,
       ...(commitMessage ? { commitMessage } : {}),
       ...(onConfirmed ? { onConfirmed } : {}),
       ...(filePaths ? { filePaths } : {}),
-      ...(sessionTranscript ? { sessionTranscript } : {}),
       skipDefaultBranchPrompt: true,
     });
   };
@@ -1611,10 +1599,7 @@ export default function GitActionsControl({
       return;
     }
     if (item.dialogAction === "create_pr") {
-      void runGitActionWithToast({
-        action: "create_pr",
-        ...(item.sessionTranscript ? { sessionTranscript: true } : {}),
-      });
+      void runGitActionWithToast({ action: "create_pr" });
       return;
     }
     setExcludedFiles(new Set());
