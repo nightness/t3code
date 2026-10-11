@@ -2,7 +2,7 @@
   "//": "The session transcript renderer: a denext App Router app that exports redacted T3 thread transcripts to static, near-zero-JS HTML. Released denext only (plan decision D7).",
   "tasks": {
     "dev": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.5/cli dev .",
-    "export": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.5/cli export .",
+    "export": "deno run -A --node-modules-dir=none jsr:@denext/denext@^3.4.5/cli export . && deno run --allow-read=. --allow-write=out --allow-env=TRANSCRIPTS_BASE_PATH scripts/rebase-assets.ts",
     "fixture": "node scripts/write-fixture.ts",
     "test": "deno test -A --node-modules-dir=none test/"
   },
