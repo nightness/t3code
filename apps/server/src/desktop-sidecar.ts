@@ -5,7 +5,6 @@ import { provideInProcessBootstrapEnvelope } from "./bootstrap.ts";
 import {
   DESKTOP_SIDECAR_EXEC_PATH,
   desktopSidecarBootstrap,
-  hideWorkerLocation,
   prepareDesktopSidecarProcess,
   readDenextSidecar,
 } from "./desktopSidecar.ts";
@@ -13,7 +12,6 @@ import {
 const sidecar = readDenextSidecar();
 if (sidecar !== undefined) {
   prepareDesktopSidecarProcess(process);
-  hideWorkerLocation();
   provideInProcessBootstrapEnvelope(desktopSidecarBootstrap(sidecar));
   const { runCli } = await import("./binCli.ts");
   runCli({ hostExecutablePath: DESKTOP_SIDECAR_EXEC_PATH });

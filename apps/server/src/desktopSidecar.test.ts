@@ -6,7 +6,6 @@ import {
   type DenextSidecarContext,
   type DesktopSidecarProcess,
   desktopSidecarBootstrap,
-  hideWorkerLocation,
   prepareDesktopSidecarProcess,
   readDenextSidecar,
 } from "./desktopSidecar.ts";
@@ -80,21 +79,5 @@ describe("prepareDesktopSidecarProcess", () => {
     const given = makeProcess(["/app", "/app/main.mjs", "/work"]);
     prepareDesktopSidecarProcess(given, "/Users/me");
     expect(given.argv).toEqual(["/app", "/app/main.mjs", "/work"]);
-  });
-});
-
-describe("hideWorkerLocation", () => {
-  it("hides a worker's location so absolute URLs need no base", () => {
-    const scope: { location?: unknown } = {
-      location: { origin: "null", pathname: "null/0b6f2c1e" },
-    };
-    hideWorkerLocation(scope);
-    expect(scope.location).toBeUndefined();
-  });
-
-  it("leaves a scope without a location alone", () => {
-    const scope: { location?: unknown } = {};
-    hideWorkerLocation(scope);
-    expect("location" in scope).toBe(false);
   });
 });
