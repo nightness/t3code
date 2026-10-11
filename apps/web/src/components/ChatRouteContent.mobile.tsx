@@ -6,7 +6,12 @@
 // scroll position intact. denext's HistoryStack owns the animation and the gesture; TanStack
 // Router keeps owning the URL. A wider window (an iPad) keeps the split layout.
 import { Outlet, useRouter } from "@tanstack/react-router";
-import { tanstackHistory, useStackNavigation, type HistoryScreen } from "denext/navigation";
+import {
+  HistoryStack,
+  tanstackHistory,
+  useStackNavigation,
+  type HistoryScreen,
+} from "denext/navigation";
 import { ChevronLeftIcon } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 
@@ -14,7 +19,6 @@ import { useLegacySidebarEnabled } from "../hooks/useSettings";
 import { resolveThreadRouteTarget, type ThreadRouteTarget } from "../threadRoutes";
 import LegacyThreadSidebar from "./LegacySidebar";
 import { PHONE_STACK_PATHS, phoneStackKey } from "./phoneStack.logic";
-import { PhoneStackView } from "./phoneStackView";
 import ThreadSidebar from "./Sidebar";
 import { ThreadRouteView } from "./ThreadRouteView";
 import { Button } from "./ui/button";
@@ -92,8 +96,28 @@ const SCREENS: readonly HistoryScreen[] = [
   { path: PHONE_STACK_PATHS.thread, render: renderThread },
 ];
 
+// T3 draws its own headers (the thread header, the list's chrome): the stack adds none.
+const SCREEN_OPTIONS = { headerShown: false } as const;
+// The stack is a flex item of the sidebar layout's row, and its screens are absolutely positioned,
+// so it has no width of its own: it must fill the row, or every screen is 0 px wide (a blank
+// Home). Screens paint T3's background, not the platform theme's.
+const STACK_STYLE = {
+  flex: "1 1 0%",
+  minWidth: 0,
+  width: "100%",
+  "--dnx-screen-bg": "var(--background)",
+} as const;
+
 function PhoneStack() {
   const router = useRouter();
   const history = useMemo(() => tanstackHistory(router), [router]);
-  return <PhoneStackView history={history} screens={SCREENS} getKey={phoneStackKey} />;
+  return (
+    <HistoryStack
+      history={history}
+      screens={SCREENS}
+      getKey={phoneStackKey}
+      screenOptions={SCREEN_OPTIONS}
+      style={STACK_STYLE}
+    />
+  );
 }
