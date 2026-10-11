@@ -39,7 +39,6 @@ function PhoneHome() {
       side="left"
       collapsible="none"
       data-app-sidebar=""
-      data-phone-home=""
       role="navigation"
       aria-label="Threads"
       className="h-full w-full"
