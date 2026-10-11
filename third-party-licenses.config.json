@@ -590,6 +590,16 @@
       }
     },
     {
+      "name": "@rollup/rollup-linux-x64-musl",
+      "version": "4.44.0",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": [
+          "Copyright (c) 2017 [these people](https://github.com/rollup/rollup/graphs/contributors)"
+        ]
+      }
+    },
+    {
       "name": "@rollup/rollup-darwin-x64",
       "version": "4.44.0",
       "generatedNotice": {
