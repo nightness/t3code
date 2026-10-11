@@ -22,11 +22,6 @@ import {
   unlockNotificationAudio,
 } from "../threadNotifications";
 import { resolveSidebarThreadStatus } from "./Sidebar.logic";
-import {
-  postShellThreadAlert,
-  ThreadNotificationShell,
-  type ThreadAlert,
-} from "./ThreadNotificationShell";
 import { toastManager } from "./ui/toast";
 
 export function ThreadNotificationCoordinator() {
@@ -36,9 +31,9 @@ export function ThreadNotificationCoordinator() {
     (settings) => settings.inAppNotificationsEnabled,
   );
   const pending = useRef(
-    new Map<string, { environmentId: EnvironmentId; notification: ThreadAlert }>(),
+    new Map<string, { environmentId: EnvironmentId; notification: Notification }>(),
   );
-  const onNotification = useCallback((environmentId: EnvironmentId, notification: ThreadAlert) => {
+  const onNotification = useCallback((environmentId: EnvironmentId, notification: Notification) => {
     pending.current.get(notification.tag)?.notification.close();
     pending.current.set(notification.tag, { environmentId, notification });
     setNotificationBadge(pending.current.size);
@@ -82,20 +77,15 @@ export function ThreadNotificationCoordinator() {
     };
   }, [mode]);
 
-  return (
-    <>
-      <ThreadNotificationShell />
-      {mode === "off" && !inAppNotificationsEnabled
-        ? null
-        : environmentIds.map((environmentId) => (
-            <EnvironmentNotifications
-              key={environmentId}
-              environmentId={environmentId}
-              onNotification={onNotification}
-            />
-          ))}
-    </>
-  );
+  if (mode === "off" && !inAppNotificationsEnabled) return null;
+
+  return environmentIds.map((environmentId) => (
+    <EnvironmentNotifications
+      key={environmentId}
+      environmentId={environmentId}
+      onNotification={onNotification}
+    />
+  ));
 }
 
 interface NotificationState {
@@ -109,7 +99,7 @@ function EnvironmentNotifications({
   onNotification,
 }: {
   environmentId: EnvironmentId;
-  onNotification: (environmentId: EnvironmentId, notification: ThreadAlert) => void;
+  onNotification: (environmentId: EnvironmentId, notification: Notification) => void;
 }) {
   const shell = useAtomValue(environmentShell.stateValueAtom(environmentId));
   // The shell reducer keeps the thread list and unchanged thread objects
@@ -216,19 +206,13 @@ function EnvironmentNotifications({
         });
         continue;
       }
-      if (!hasDesktopNotifications(mode)) continue;
-      if (document.visibilityState === "visible" && document.hasFocus()) continue;
-      // The native shell posts its own (the desktop's carry a Mute button).
-      const shellAlert = postShellThreadAlert({
-        ref: { environmentId, threadId: thread.id },
-        title,
-        body: thread.title,
-      });
-      if (shellAlert) {
-        onNotification(environmentId, shellAlert);
+      if (
+        !hasDesktopNotifications(mode) ||
+        (document.visibilityState === "visible" && document.hasFocus()) ||
+        typeof Notification === "undefined" ||
+        Notification.permission !== "granted"
+      )
         continue;
-      }
-      if (typeof Notification === "undefined" || Notification.permission !== "granted") continue;
       try {
         const notification = new Notification(title, {
           body: thread.title,
