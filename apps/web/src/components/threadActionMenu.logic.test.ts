@@ -13,7 +13,6 @@ const baseState: ThreadActionMenuState = {
   isPinned: false,
   isSettled: false,
   autoSettleEnabled: true,
-  isMuted: false,
   isSnoozed: false,
   canSnoozeNow: true,
   isRegeneratingTitle: false,
@@ -21,7 +20,6 @@ const baseState: ThreadActionMenuState = {
   supports: {
     settlement: true,
     autoSettleOptOut: true,
-    mute: true,
     snooze: true,
     pinning: true,
     titleRegeneration: true,
@@ -51,7 +49,6 @@ describe("buildThreadActionMenuItems", () => {
         isPinned: reversed,
         isSettled: reversed,
         isSnoozed: reversed,
-        isMuted: reversed,
       });
       const expected = reversed
         ? [
@@ -61,7 +58,6 @@ describe("buildThreadActionMenuItems", () => {
             "rename",
             "regenerate-title",
             "auto-settle",
-            "unmute",
             "archive",
             "delete",
           ]
@@ -72,7 +68,6 @@ describe("buildThreadActionMenuItems", () => {
             "rename",
             "regenerate-title",
             "auto-settle",
-            "mute",
             "archive",
             "delete",
           ];
@@ -103,7 +98,6 @@ describe("buildThreadActionMenuItems", () => {
         supports: {
           settlement: false,
           autoSettleOptOut: false,
-          mute: false,
           snooze: false,
           pinning: false,
           titleRegeneration: false,
@@ -178,14 +172,6 @@ describe("buildThreadActionMenuItems", () => {
     ).not.toContain("auto-settle");
   });
 
-  it("offers the mute direction that reverses the current state", () => {
-    expect(ids(baseState)).toContain("mute");
-    expect(ids({ ...baseState, isMuted: true })).toContain("unmute");
-    expect(ids({ ...baseState, supports: { ...baseState.supports, mute: false } })).not.toContain(
-      "mute",
-    );
-  });
-
   it("disables snooze when the thread cannot snooze, keeping presets visible", () => {
     const snooze = buildThreadActionMenuItems({ ...baseState, canSnoozeNow: false }).find(
       (item) => item.id === "snooze",
@@ -222,7 +208,6 @@ describe("buildThreadActionMenuItems", () => {
         supports: {
           settlement: false,
           autoSettleOptOut: false,
-          mute: false,
           snooze: false,
           pinning: false,
           titleRegeneration: false,

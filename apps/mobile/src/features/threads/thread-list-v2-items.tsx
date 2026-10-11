@@ -548,7 +548,6 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   readonly onPinThread: (thread: EnvironmentThreadShell) => void;
   readonly onUnpinThread: (thread: EnvironmentThreadShell) => void;
   readonly onSetThreadAutoSettle: (thread: EnvironmentThreadShell, enabled: boolean) => void;
-  readonly onSetThreadMuted: (thread: EnvironmentThreadShell, muted: boolean) => void;
   /** False on environments whose server predates thread.settle/unsettle:
       swipe + menu fall back to Archive instead of failing on use. */
   readonly settlementSupported: boolean;
@@ -558,8 +557,6 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   readonly pinningSupported: boolean;
   /** False on servers that predate thread.auto-settle.set. */
   readonly autoSettleOptOutSupported: boolean;
-  /** False on servers that predate thread.mute.set. */
-  readonly muteSupported: boolean;
   /** False on servers that predate thread title regeneration. */
   readonly titleRegenerationSupported: boolean;
   /** Server supports reordering this card's section. */
@@ -597,7 +594,6 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     onPinThread,
     onUnpinThread,
     onSetThreadAutoSettle,
-    onSetThreadMuted,
     onMoveThread,
   } = props;
   const snoozedRow = props.snoozed === true;
@@ -673,10 +669,6 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const handleSetAutoSettle = useCallback(
     (enabled: boolean) => onSetThreadAutoSettle(thread, enabled),
     [onSetThreadAutoSettle, thread],
-  );
-  const handleSetMuted = useCallback(
-    (muted: boolean) => onSetThreadMuted(thread, muted),
-    [onSetThreadMuted, thread],
   );
   const handleMoveUp = useCallback(() => onMoveThread?.(thread, "up"), [onMoveThread, thread]);
   const handleMoveDown = useCallback(() => onMoveThread?.(thread, "down"), [onMoveThread, thread]);
@@ -756,11 +748,11 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       variant,
     ],
   );
-  // Per-thread settings, not lifecycle verbs. Auto-settle is a submenu with
-  // the current option checked, matching web.
-  const threadSettingMenuItems = useMemo<MenuAction[]>(
-    () => [
-      ...(props.autoSettleOptOutSupported
+  // A submenu with the current option checked, matching web. This is a
+  // per-thread setting, not a lifecycle verb.
+  const autoSettleMenuItems = useMemo<MenuAction[]>(
+    () =>
+      props.autoSettleOptOutSupported
         ? [
             {
               id: "auto-settle",
@@ -780,21 +772,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               ],
             } satisfies MenuAction,
           ]
-        : []),
-      ...(props.muteSupported
-        ? [
-            thread.mutedAt != null
-              ? { id: "unmute", title: "Unmute notifications", image: "bell" }
-              : { id: "mute", title: "Mute notifications", image: "bell.slash" },
-          ]
-        : []),
-    ],
-    [
-      props.autoSettleOptOutSupported,
-      props.muteSupported,
-      thread.autoSettleDisabledAt,
-      thread.mutedAt,
-    ],
+        : [],
+    [props.autoSettleOptOutSupported, thread.autoSettleDisabledAt],
   );
   const titleMenuItems = useMemo<MenuAction[]>(
     () => [
@@ -817,20 +796,20 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       },
       ...arrangementMenuItems,
       ...titleMenuItems,
-      ...threadSettingMenuItems,
+      ...autoSettleMenuItems,
       { id: "delete", title: "Delete", image: "trash", attributes: { destructive: true } },
     ],
-    [arrangementMenuItems, threadSettingMenuItems, snoozePresetActions, titleMenuItems],
+    [arrangementMenuItems, autoSettleMenuItems, snoozePresetActions, titleMenuItems],
   );
   const cardMenuActions = useMemo<MenuAction[]>(
     () => [
       CARD_MENU_ACTIONS[0]!,
       ...arrangementMenuItems,
       ...titleMenuItems,
-      ...threadSettingMenuItems,
+      ...autoSettleMenuItems,
       ...CARD_MENU_ACTIONS.slice(1),
     ],
-    [arrangementMenuItems, threadSettingMenuItems, titleMenuItems],
+    [arrangementMenuItems, autoSettleMenuItems, titleMenuItems],
   );
   // Settled and snoozed rows keep the setting too, matching web where every
   // row shares one menu builder.
@@ -841,19 +820,19 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         (action) => action.id !== "move-up" && action.id !== "move-down",
       ),
       ...titleMenuItems,
-      ...threadSettingMenuItems,
+      ...autoSettleMenuItems,
       SLIM_MENU_ACTIONS[1]!,
     ],
-    [arrangementMenuItems, threadSettingMenuItems, titleMenuItems],
+    [arrangementMenuItems, autoSettleMenuItems, titleMenuItems],
   );
   const snoozedMenuActions = useMemo<MenuAction[]>(
     () => [
       SNOOZED_MENU_ACTIONS[0]!,
       ...titleMenuItems,
-      ...threadSettingMenuItems,
+      ...autoSettleMenuItems,
       SNOOZED_MENU_ACTIONS[1]!,
     ],
-    [threadSettingMenuItems, titleMenuItems],
+    [autoSettleMenuItems, titleMenuItems],
   );
   const legacyMenuActions = useMemo<MenuAction[]>(
     () => [
@@ -874,8 +853,6 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       if (nativeEvent.event === "unpin") handleUnpin();
       if (nativeEvent.event === "auto-settle:enabled") handleSetAutoSettle(true);
       if (nativeEvent.event === "auto-settle:disabled") handleSetAutoSettle(false);
-      if (nativeEvent.event === "mute") handleSetMuted(true);
-      if (nativeEvent.event === "unmute") handleSetMuted(false);
       if (nativeEvent.event === "arrange") appAtomRegistry.set(threadArrangementOpenAtom, true);
       if (nativeEvent.event === "move-up") handleMoveUp();
       if (nativeEvent.event === "move-down") handleMoveDown();
@@ -914,7 +891,6 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       handleSettle,
       handleSnooze,
       handleSetAutoSettle,
-      handleSetMuted,
       handleUnpin,
       handleUnsettle,
       handleUnsnooze,

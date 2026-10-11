@@ -146,8 +146,7 @@ function EnvironmentNotifications({
           ? completedAt
           : (prior?.completion ?? null);
       next.set(thread.id, { raw: rawThread, attention, completion });
-      // Muted threads keep their tracked state so unmuting never replays old alerts.
-      if (!prior || thread.archivedAt !== null || rawThread.mutedAt != null) continue;
+      if (!prior || thread.archivedAt !== null) continue;
       const kind =
         attention && attention !== prior.attention
           ? "input"
