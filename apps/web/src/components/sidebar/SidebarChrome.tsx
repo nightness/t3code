@@ -25,9 +25,6 @@ import {
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
-import { PhoneHomeSettingsGlyph } from "./PhoneHomeSettingsGlyph";
-import { usePhoneHomeChrome } from "./phoneHomeChrome";
-import { SidebarHeaderIconButton } from "./SidebarThreadHeader";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
@@ -40,9 +37,6 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
 }) {
   const stageLabel = useEnvironmentStageLabel();
   const environmentIdentificationMode = useEnvironmentIdentificationMode();
-  // The phone stack's Home has no drawer for the toggle to open: apps/mobile's Home header shows
-  // the brand title with settings at the trailing edge instead.
-  const phoneHome = usePhoneHomeChrome();
   const backdropVariant = resolveSidebarStageBackdropVariant(
     stageLabel,
     environmentIdentificationMode === "artwork",
@@ -61,17 +55,15 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
       )}
     >
       {backdropVariant ? <SidebarStageBackdrop variant={backdropVariant} /> : null}
-      {phoneHome ? null : (
-        <SidebarTrigger
-          // Over the stage artwork: the media viewer's control-on-imagery treatment.
-          variant={backdropVariant ? "media-navigation" : "ghost"}
-          className="relative top-auto z-10 translate-y-0 md:hidden"
-        />
-      )}
+      <SidebarTrigger
+        // Over the stage artwork: the media viewer's control-on-imagery treatment.
+        variant={backdropVariant ? "media-navigation" : "ghost"}
+        className="relative top-auto z-10 translate-y-0 md:hidden"
+      />
       {/* One visible line: the pill wraps onto the clipped second line once it no longer fits.
           The padding keeps the brand's focus ring inside the clip. */}
       <div className="relative z-10 flex h-8 min-w-0 flex-1 flex-wrap content-start items-center gap-x-2 overflow-hidden py-0.5">
-        <SidebarBrand onBackdrop={backdropVariant !== null} phoneHome={phoneHome} />
+        <SidebarBrand onBackdrop={backdropVariant !== null} />
         {pillLabel ? (
           <div className="ml-1 flex h-7 items-center">
             <Badge data-environment-identification="pill" size="sm" variant="secondary">
@@ -80,24 +72,9 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           </div>
         ) : null}
       </div>
-      {phoneHome ? <PhoneHomeSettingsButton /> : null}
     </div>
   );
 });
-
-/** apps/mobile's Home header button that opens Settings ("Open settings"). */
-function PhoneHomeSettingsButton() {
-  const navigate = useNavigate();
-  return (
-    <SidebarHeaderIconButton
-      label="Open settings"
-      className="z-10"
-      onClick={() => void navigate({ to: "/settings" })}
-    >
-      <PhoneHomeSettingsGlyph />
-    </SidebarHeaderIconButton>
-  );
-}
 
 // Measures the brand at its titlebar inset, plus the header's right padding and the
 // sidebar border, so the sidebar minimum follows font size, zoom and macOS window controls.
@@ -130,40 +107,25 @@ export function SidebarBrandWidthProbe({
   );
 }
 
-function SidebarBrand({ onBackdrop, phoneHome }: { onBackdrop: boolean; phoneHome: boolean }) {
+function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
   return (
     <Link
       aria-label="Go to threads"
       className={cn(
-        "relative z-10 h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2",
-        // On the phone Home the brand is the screen's title, in line with the list's text.
-        phoneHome ? "ml-1.5 flex" : "ml-[var(--workspace-titlebar-content-left)] hidden md:flex",
+        "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 md:flex",
         onBackdrop ? "text-white" : "text-foreground",
       )}
       to="/"
     >
-      <SidebarBrandMark onBackdrop={onBackdrop} phoneHome={phoneHome} />
+      <SidebarBrandMark onBackdrop={onBackdrop} />
     </Link>
   );
 }
 
-function SidebarBrandMark({
-  onBackdrop,
-  phoneHome = false,
-}: {
-  onBackdrop: boolean;
-  phoneHome?: boolean;
-}) {
+function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
   return (
-    // Center the visible capitals, without the font's ascender/descender space. On the phone Home
-    // it is apps/mobile's CompactBrandTitle, sized by phone-parity.css (data-phone-home-brand).
-    <span
-      className={cn(
-        "inline-flex min-w-0 items-baseline font-medium",
-        phoneHome ? "gap-1.5" : "gap-1 text-sm tracking-tight",
-      )}
-      data-phone-home-brand={phoneHome ? "" : undefined}
-    >
+    // Center the visible capitals, without the font's ascender/descender space.
+    <span className="inline-flex min-w-0 items-baseline gap-1 text-sm font-medium tracking-tight">
       <T3Wordmark aria-label="T3" className="h-[1cap] w-auto shrink-0" />
       <span
         className={cn(
@@ -204,8 +166,6 @@ function SidebarUtilityItem({
 
 export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const navigate = useNavigate();
-  // The phone Home's header carries Settings (PhoneHomeSettingsButton), as apps/mobile's does.
-  const phoneHome = usePhoneHomeChrome();
   const navigateToMainApp = useNavigateToMainApp();
   const { isMobile, setOpenMobile } = useSidebar();
   const isOnUtilityPage = useLocation({
@@ -252,13 +212,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
         </SidebarMenuItem>
       ) : (
         <>
-          {phoneHome ? null : (
-            <SidebarUtilityItem
-              icon={<SettingsIcon />}
-              label="Settings"
-              onClick={handleSettingsClick}
-            />
-          )}
+          <SidebarUtilityItem
+            icon={<SettingsIcon />}
+            label="Settings"
+            onClick={handleSettingsClick}
+          />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
               icon={<PullRequestGlyph.pullRequest />}
