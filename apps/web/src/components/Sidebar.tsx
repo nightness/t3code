@@ -3615,11 +3615,6 @@ export default function Sidebar() {
     },
     [contextDragThreads, pointerOutsideThreadList],
   );
-  // The phone Home offers no drag-sort (apps/mobile's Home has none), so it registers no sort
-  // sensor: SidebarPointerSensor.setup() adds a window-level non-passive touchmove listener on
-  // coarse pointers, which iOS then waits on for every touchmove of a scroll.
-  const phoneHome = usePhoneHomeChrome();
-  const noDndSensors = useSensors();
   const dndSensors = useSensors(
     useSensor(SidebarPointerSensor, {
       distance: SIDEBAR_DRAG_DISTANCE,
@@ -5158,6 +5153,7 @@ export default function Sidebar() {
   // for multi-project setups.
   // The phone Home starts a thread from apps/mobile's "Choose project" sheet instead
   // (sidebar/PhoneNewTaskSheet.mobile.tsx).
+  const phoneHome = usePhoneHomeChrome();
   const [phoneNewTaskOpen, setPhoneNewTaskOpen] = useState(false);
   const [phoneSearchOpen, setPhoneSearchOpen] = useState(false);
   const handleNewThreadClick = useCallback(
@@ -5370,8 +5366,6 @@ export default function Sidebar() {
       ) : null}
       <SidebarContent
         className="min-h-full"
-        // The phone Home's list is one plain native scroller, as apps/mobile's.
-        plainScroller={phoneHome}
         fixedHeader={
           phoneHome ? undefined : (
             // Lifted above the stage backdrop, whose fade bleeds below the
@@ -5451,7 +5445,7 @@ export default function Sidebar() {
           {!isSearchingThreads ? (
             <TooltipProvider key="sidebar-thread-tooltips" {...SIDEBAR_THREAD_HOVER_CARD_TIMING}>
               <DndContext
-                sensors={phoneHome ? noDndSensors : dndSensors}
+                sensors={dndSensors}
                 autoScroll={!isContextDrag}
                 collisionDetection={dndCollisionDetection}
                 modifiers={[
