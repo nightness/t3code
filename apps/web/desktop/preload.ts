@@ -308,9 +308,11 @@ window.desktopBridge = {
   setClientSettings: async (settings) => {
     localStorage.setItem(CLIENT_SETTINGS_KEY, JSON.stringify(settings));
   },
-  getConnectionCatalog: () => secureStore.get(CONNECTION_CATALOG_KEY),
+  // Like the bearer: a keychain that refuses (Linux with no Secret Service or a locked keyring)
+  // keeps the catalog in session storage until the app quits instead of failing every load/save.
+  getConnectionCatalog: () => secureStore.get(CONNECTION_CATALOG_KEY, { fallback: "session" }),
   setConnectionCatalog: async (catalog) => {
-    await secureStore.set(CONNECTION_CATALOG_KEY, catalog);
+    await secureStore.set(CONNECTION_CATALOG_KEY, catalog, { fallback: "session" });
     return true;
   },
   clearConnectionCatalog: () => secureStore.delete(CONNECTION_CATALOG_KEY),
