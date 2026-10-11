@@ -44,6 +44,7 @@ import {
 
 import pkg from "../package.json" with { type: "json" };
 import { deepLinkHref } from "../src/deepLinks.ts";
+import { desktopBearerStore } from "../src/desktopBearerStore.ts";
 import { readSidecarBootstrapToken, SERVER_SIDECAR_NAME } from "../src/desktopServerSidecar.ts";
 
 const PRIMARY_LOCAL_ENVIRONMENT_ID = "primary";
@@ -98,8 +99,16 @@ function primaryBootstrap(): DesktopEnvironmentBootstrap {
  * the pairing screen) through the browser-session request. The custom-scheme origin keeps no
  * session cookie, so that request is taken over: the credential is exchanged for a bearer (the
  * token exchange remote environments use), kept in the keychain, and the page reloads onto it. A
- * failed exchange lets the request through, so the screen reports the error as before.
+ * session whose keychain refuses (Linux with no Secret Service or a locked keyring) keeps it in
+ * session storage until the app quits (../src/desktopBearerStore.ts). A failed exchange lets the
+ * request through, so the screen reports the error as before.
  */
+const localBearer = desktopBearerStore({
+  key: BEARER_KEY,
+  secure: secureStore,
+  session: () => sessionStorage,
+  warn: (message, cause) => console.warn(message, cause),
+});
 const nativeFetch = globalThis.fetch.bind(globalThis);
 const authUrlPrefix = `${location.origin}/api/auth/`;
 const browserSessionUrl = `${authUrlPrefix}browser-session`;
@@ -120,8 +129,7 @@ async function exchangePairingCredential(credential: string): Promise<boolean> {
   if (!response.ok) return false;
   const token = ((await response.json()) as { access_token?: unknown }).access_token;
   if (typeof token !== "string" || token.length === 0) return false;
-  await secureStore.set(BEARER_KEY, token);
-  return true;
+  return await localBearer.write(token);
 }
 
 function requestUrl(input: RequestInfo | URL): string {
@@ -300,7 +308,7 @@ window.desktopBridge = {
   onNotificationBadgeClear: noUnsubscribe,
   getLocalEnvironmentBootstraps: () => [primaryBootstrap()],
   getLocalEnvironmentEnabled: () => true,
-  getLocalEnvironmentBearerToken: async () => (await secureStore.get(BEARER_KEY)) ?? "",
+  getLocalEnvironmentBearerToken: () => localBearer.read(),
   getClientSettings: async () => readClientSettings(),
   setClientSettings: async (settings) => {
     localStorage.setItem(CLIENT_SETTINGS_KEY, JSON.stringify(settings));
