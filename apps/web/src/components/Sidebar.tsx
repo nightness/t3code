@@ -212,7 +212,6 @@ import {
   shouldNavigateAfterThreadPark,
   shouldRecedeSidebarThread,
   resolveWorkingStartedAt,
-  SIDEBAR_THREAD_HOVER_CARD_TIMING,
   sidebarListItemId,
   sidebarMarkerId,
   sidebarThreadKeyAtY,
@@ -5295,8 +5294,10 @@ export default function Sidebar() {
           {isSearchingThreads ? (
             threadSearchResults.length > 0 ? (
               <TooltipProvider
-                key="sidebar-thread-search-tooltips"
-                {...SIDEBAR_THREAD_HOVER_CARD_TIMING}
+                key="sidebar-thread-search-tooltips-150"
+                delay={150}
+                closeDelay={0}
+                timeout={400}
               >
                 <ul
                   id="sidebar-thread-search-results"
@@ -5358,7 +5359,12 @@ export default function Sidebar() {
             )
           ) : null}
           {!isSearchingThreads ? (
-            <TooltipProvider key="sidebar-thread-tooltips" {...SIDEBAR_THREAD_HOVER_CARD_TIMING}>
+            <TooltipProvider
+              key="sidebar-thread-tooltips-150"
+              delay={150}
+              closeDelay={0}
+              timeout={400}
+            >
               <DndContext
                 sensors={dndSensors}
                 autoScroll={!isContextDrag}
