@@ -14,7 +14,6 @@ import { SidebarInset } from "../components/ui/sidebar";
 import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import {
-  useAllEnvironmentProjectSnapshotsReady,
   useAllEnvironmentShellsBootstrapped,
   useProjects,
   useThreadShells,
@@ -22,7 +21,6 @@ import {
 import { useEnvironments } from "../state/environments";
 import { APP_DISPLAY_NAME } from "~/branding";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
-import { useReleaseAppShell } from "~/appShellRelease";
 
 function ChatIndexRouteView() {
   const { authGateState } = Route.useRouteContext();
@@ -69,13 +67,6 @@ function IndexDraftLanding() {
       setStartState((state) => ({ ...state, failed: true }));
     });
   }, [handleNewThread, mostRecentProject, startState.retryRequest]);
-  // The shell's composer waits for the draft's editor; with no draft to open, this page is it.
-  // Zero projects counts only once every environment's live snapshot proves it: the bootstrap
-  // reports done with no projects for a moment before they arrive.
-  const projectSnapshotsReady = useAllEnvironmentProjectSnapshotsReady();
-  useReleaseAppShell(
-    startState.failed || (bootstrapped && projectSnapshotsReady && mostRecentProject === null),
-  );
 
   if (!bootstrapped) {
     return null;
@@ -124,7 +115,6 @@ export const Route = createFileRoute("/_chat/")({
 });
 
 function HostedStaticOnboardingState() {
-  useReleaseAppShell(true);
   const cloudEnabled = hasCloudPublicConfig();
   const localEnvironmentOff = isLocalEnvironmentDisabled();
   const description = localEnvironmentOff

@@ -39,7 +39,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useComposerShellHandoff } from "./composerShellHandoff";
 
 import {
   clampCollapsedComposerCursor,
@@ -179,11 +178,6 @@ export interface ComposerPromptEditorProps {
   onCitationSubmitAndSend?: () => void;
   onPaste: React.ClipboardEventHandler<HTMLElement>;
   editorRef: React.RefObject<ComposerPromptEditorHandle | null>;
-  /**
-   * The `data-denext-shell-key` of the prerendered shell field this editor takes over
-   * (AppShell.static.tsx): what was typed there before the app started moves in here.
-   */
-  shellHandoffKey?: string | undefined;
 }
 
 export type ComposerCitationCommentRequest = {
@@ -838,7 +832,6 @@ function ComposerPromptEditorTiptapInner(props: ComposerPromptEditorProps) {
     onCitationSubmitAndSend,
     onPaste,
     editorRef,
-    shellHandoffKey,
   } = props;
   // The setting toggles styling, not the engine: both modes are Tiptap.
   // Plain mode disables the mark extensions, so markers stay literal text.
@@ -1025,18 +1018,8 @@ function ComposerPromptEditorTiptapInner(props: ComposerPromptEditorProps) {
           }
         : {}),
       "aria-placeholder": placeholder,
-      ...(shellHandoffKey ? { "data-denext-shell-key": shellHandoffKey } : {}),
     }),
-    [
-      activeSuggestionId,
-      ariaLabel,
-      className,
-      disabled,
-      placeholder,
-      richText,
-      shellHandoffKey,
-      suggestionListId,
-    ],
+    [activeSuggestionId, ariaLabel, className, disabled, placeholder, richText, suggestionListId],
   );
 
   const editor = useEditor(
@@ -1603,9 +1586,6 @@ function ComposerPromptEditorTiptapInner(props: ComposerPromptEditorProps) {
     value,
   ]);
 
-  // After the controlled value has landed, so the shell text reaches the store through onChange.
-  const keepShellCaretRef = useComposerShellHandoff(editor, shellHandoffKey);
-
   const focusAt = useCallback(
     (nextCursor: number) => {
       if (!editor) return;
@@ -1653,11 +1633,6 @@ function ComposerPromptEditorTiptapInner(props: ComposerPromptEditorProps) {
       },
       focusAt,
       focusAtEnd: () => {
-        // Text typed into the prerendered shell keeps the caret where the user left it.
-        if (keepShellCaretRef.current) {
-          focusAt(snapshotRef.current.cursor);
-          return;
-        }
         focusAt(
           literalText
             ? snapshotRef.current.value.length

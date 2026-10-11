@@ -27,14 +27,11 @@ class BootElement extends EventTarget {
 
 describe("app startup failures", () => {
   let bootShell: BootElement | null;
-  let documentElement: { dataset: Record<string, string> };
 
   beforeEach(() => {
     vi.resetModules();
     bootShell = new BootElement("div");
-    documentElement = { dataset: { t3Shell: "draft" } };
     vi.stubGlobal("document", {
-      documentElement,
       getElementById: () => bootShell,
       createElement: (tagName: string) => new BootElement(tagName),
     });
@@ -48,8 +45,6 @@ describe("app startup failures", () => {
     await vi.dynamicImportSettled();
 
     expect(bootShell?.text).toContain("Startup chunks failed");
-    // The prerendered shell (AppShell.static.tsx) shows its splash, where the error is.
-    expect(documentElement.dataset.t3Shell).toBe("splash");
   });
 
   afterEach(() => {
